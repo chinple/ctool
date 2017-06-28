@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>工具管理 接口注册中心</title>
+	<link rel="stylesheet" type="text/css" href="js/themes/default/easyui.css">
+	<link rel="stylesheet" type="text/css" href="js/themes/icon.css">
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/jquery.easyui.min.js"></script>
+	<script src="CTestClient.js"></script>
+	<script src="/cservice/js"></script>
+</head>
+<body class="easyui-layout">
+	<div data-options="region:'north',border:false" style="height:20ptx;">
+	<br>&nbsp;工具集：
+		<select class="easyui-combobox" id="ltestToolSet" style="width:140px;" onchange="CServiceToolView.SwithServer(this.value)"></select>
+		工具接口：
+		<select class="easyui-combobox" id="infNameList" style="width:200px;" onchange="CServiceToolView.SwitchInf()"></select>
+		<input type="text" id="hostPort" value="10.68.239.51:8080">
+		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="CServiceToolView.InitToolInfNameList()">查询接口</a>
+		<a href="LTestHelp.html">帮助</a>
+		<a id=newWindow>刷新</a>
+	</div>
+	<div data-options="region:'west',split:true,title:'数据 <input id=dataFilter class=easyui-textbox style=height:20px />'" style="width:230px;padding:10px;">
+		<ul class="easyui-tree" id="ltest-data" data-options="animate:true,checkbox:false"></ul>
+	</div>
+	<div data-options="region:'south',border:false" style="padding:5px;">Power By MTest. To make test as service.</div>
+	<div data-options="region:'center'">
+		<div class="easyui-panel" data-options="multiple:true" style="background:#f5f5f5;">
+			<a href="#" onclick='CServiceToolView.DoInfRequests()' title='快捷键F8' class="easyui-linkbutton" data-options="iconCls:'icon-ok'">Request</a>
+			(<input type='input' id='requestRepeatTime' value='0' size=1/>秒)
+			<!--a href="#" onclick='CServiceToolView.DoInfDataTests()' class="easyui-linkbutton" data-options="toggle:true">Test</a>
+			<a href="#" onclick='CServiceToolView.DoInfDataTests(CServiceToolView.InfDatas,[],0)' class="easyui-linkbutton" data-options="toggle:true">TestAll</a -->
+			<a href="#" onclick='CServiceToolView.SaveInfData(true)' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增</a>
+			<a href="#" onclick='CServiceToolView.SaveInfData(false)' class="easyui-linkbutton" data-options="iconCls:'icon-save'">保存</a>
+			<a href="#" onclick='CServiceToolView.DeleteInfData()' class="easyui-linkbutton" data-options="iconCls:'icon-cancel'">删除</a>
+
+			<a href="#" onclick='CServiceToolView.MoveInfData(true)' class="easyui-linkbutton">上移</a>
+			<a href="#" onclick='CServiceToolView.MoveInfData(false)' class="easyui-linkbutton">下移</a>
+			<!-- a href="#" onclick='HtmlTag.SetTriggerVal("infRelyStep","style.display","","none")' class="easyui-linkbutton" >步骤</a>
+			<a href="#" onclick='HtmlTag.SetTriggerVal("show_prop","style.display","","none")' class="easyui-linkbutton" >结果</a>
+			<a href="#" class="easyui-linkbutton">生成数据</-->
+		</div>
+		<div id="ltest-condArg"></div>
+		<div id="ltest-response" class="easyui-tabs" data-options="multiple:true">
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript">
+var SetArgTimeOut = function(argHandle, argTime, argList){
+	var MakeNoArgFun = function(argHandle, argList){
+		return {
+			run :function(){
+		  if(DataOperation.IsArray(argList)){
+			var argNames = ""
+			for(var ai in argList)
+				argNames +=(", argList["+ai+"]")
+			eval("argHandle("+argNames.substr(2)+")")
+		  }else
+			argHandle(argList)
+		}}
+	}(argHandle, argList);
+	setTimeout(MakeNoArgFun.run, argTime)
+}
+
+HtmlTag.GetVal = function (valName, valIndex, attName){
+	var obj = $('#'+valName)
+	try{
+		return obj.combobox('getValue')
+	}catch(e){
+		return obj.val()
+	}
+}
+HtmlTag.SetVal = function (valName, val, valIndex, attName){
+	var obj = $('#'+valName)
+	try{
+		obj.combobox('setValue', val)
+	}catch(e){
+		obj[0].value = val
+	}
+}
+CServiceToolView = {
+	InfApiDataTime: null,
+	InfApiInfo:{},
+	ReqTimes: 0,
+
+	InitToolSet: function(){
+		var toolServers = CServiceTool.RegistServer()
+		$("#ltestToolSet").combobox({textField:'n',valueField:'a', data:toolServers,
+			onSelect:function(tool){
+				CServiceToolView.SwithServer(tool['a'])
+			}})
+	},
+	InitToolInfNameList: function(){
+		CServiceToolView.InfApiInfo = CServiceTool.GetService(HtmlTag.GetVal("hostPort"))
+		var hasInf = false
+		var dataList =[]
+		for(var infName in CServiceToolView.InfApiInfo){
+			var infArgDesp = CServiceToolView.InfApiInfo[infName]
+			var infNames = DataOperation.GetSortKey(infArgDesp)
+			for(var funIndex in infNames){
+				var funName = infNames[funIndex]
+				var fullValue = infName +"."+funName
+				var fullName = infArgDesp[funName]['desp']
+				if(undefined == fullName)
+					fullName = funName+"-"+infName
+				dataList[dataList.length] = [fullName,fullValue]
+				hasInf = true
+			}
+		}
+		$("#infNameList").combobox({ valueField:1,textField:0, data:dataList,
+			onSelect:function(infName){
+				CServiceToolView.SwitchInf()
+			}});
+		return hasInf
+	},
+	GetCurApiInfo: function(){
+		var nameVal = $('#infNameList').combobox('getValue')
+		var infInfo = nameVal.split(".")
+		return CServiceToolView.InfApiInfo[infInfo[0]][infInfo[1]]
+	},
+	GetCurApiArg: function(){
+		var infArgDesp = CServiceToolView.GetCurApiInfo()
+		if(undefined != infArgDesp['args'])
+			return infArgDesp['args']
+		else
+			return infArgDesp
+	},
+	GetCurApiIngoreArg: function(){
+		var curApiInfo = CServiceToolView.GetCurApiArg()
+		var iArgs = []
+		for(var argIndex in curApiInfo){
+			if(curApiInfo[argIndex].i==true){
+				iArgs = iArgs.concat(curApiInfo[argIndex].n)
+			}
+		}
+		return iArgs
+	},
+	SwithServer: function(serverAddr){
+		if(serverAddr.length==0)
+			return
+		HtmlTag.SetVal("hostPort", serverAddr)
+		if(!CServiceToolView.InitToolInfNameList()){
+			CServiceToolView.InitToolSet()
+		}
+	},
+	SwitchInf: function(){
+		CServiceToolView.ReqTimes = 0
+		CServiceToolView.ShowInfInput()
+		CServiceToolView.ShowInfData()
+		CServiceToolView.SetDefaultValue()
+		$("#dataFilter").textbox({prompt:'请输入过滤条件...'})
+	},
+	SetDefaultValue: function(dataOrder){
+		var condUrl = "ltestToolSet=" + encodeURIComponent(HtmlTag.GetVal("ltestToolSet"))+"&infNameList=" + encodeURIComponent(HtmlTag.GetVal("infNameList"))
+		if(dataOrder >=0){
+			condUrl += "&dataOrder="+dataOrder
+		}else try{
+			var apiArg = CServiceToolView.GetCurApiArg()
+			for(var argIndex in apiArg){
+				var argInfo = apiArg[argIndex]
+				if(argInfo.v != null)
+					HtmlTag.SetVal("inf_"+argInfo.n,argInfo.v)
+			}
+		}catch(e){}
+		newWindow.href = window.location.href.split("?")[0] + "?" + condUrl
+	},
+	GetInfArgInputName: function(argDesp){
+		if(undefined != argDesp.n)
+			return argDesp.n
+		return argDesp[0]
+	},
+	ShowInfInput: function(){
+		CServiceToolView.InfApiDataTime = null
+		try{
+			var apiInfo = CServiceToolView.GetCurApiInfo()
+			//HtmlTag.SetVal("validateInfomation", "校验字段包括：" + apiInfo.in + "，排除：" + apiInfo.out,1,"innerHTML")
+			var apiArgs = CServiceToolView.GetCurApiArg()
+		}catch(e){
+			return
+		}
+		var inputConditionName = "#ltest-condArg"
+		var rowDataCount =4
+		var dtable = [["<strong>描述</strong>",
+			"<input size=100 id='inf_desp' /><div style='display:none' id='infRelyStep'>前置步骤<select class='easyui-combobox' style='width:200px;' id='inf_relybefore'/> 参数<input size=12 id='inf_relybeforeArg' />；后置步骤<select class='easyui-combobox' style='width:200px;' id='inf_relyafter'/> 参数<input size=12 id='inf_relyafterArg' /></div>" + 
+			"<div style='display:none' id='show_prop'><br>路径 <input size=120 id='inf_show_path' /><br>顺序 <input size=120 id='inf_show_order' />"+"</div>"]]
+		var dtr = null;
+		var selectData = []
+		for(var di in apiArgs){
+			var da = apiArgs[di];
+			if(dtr==null){
+				dtr = []
+			}
+			// name
+			var argName = da.d==null?da.n:da.d
+			if(da.c)
+				argName = "<font color='red'>"+argName+"</font>"
+			if(!da.i)
+				argName = "<strong>"+argName+"</strong>"
+			dtr[dtr.length] = argName
+
+			// value
+			var argInput = null
+			var isNewTr = false
+			if(undefined == da.s){
+				if(da.t != null&& da.t.indexOf("textarea")>=0){
+					argInput = "<textarea cols=135 " +da.t.split("textarea")[1] +" id='inf_"+ da.n +"' />"
+					isNewTr = true
+				}else
+					argInput = "<input size=50 id='inf_"+ da.n +"' />"
+			}else{
+				selectData[selectData.length] = da
+				var changeEvent = da.c?("onchange='"+"CServiceToolView.ShowInfData()'"):""
+				argInput = "<select class='easyui-combobox' style='width:200px;' id='inf_" + da.n +"' "+changeEvent+">"+"</select>"
+			}
+			dtr[dtr.length] = argInput
+
+			if(dtr.length>=rowDataCount || isNewTr){
+				dtable[dtable.length] = dtr
+				dtr = null
+			}
+		}
+		if(dtr !=null)
+			dtable[dtable.length] = dtr
+
+		// Render table
+		var showTable=$("<table></table>");
+		$(inputConditionName).empty();
+		showTable.appendTo($(inputConditionName));
+		for(var ti in dtable){
+			var dtr = dtable[ti]
+			var showTr=$("<tr></tr>");
+			showTr.appendTo(showTable)
+			for(var tdi in dtr){
+				var tdHead = "<td>"
+				if(tdi%2==1&& dtr.length<rowDataCount){
+					tdHead = "<td colspan="+(rowDataCount-dtr.length+1)+">"
+				}
+				var showTd=$( tdHead +dtr[tdi]+"</td>");
+				showTd.appendTo(showTr)
+			}
+		}
+		// Render condition
+		for(var si in selectData){
+			var sd = selectData[si]
+			$('#inf_' + sd.n).combobox({ valueField:1,textField:0, data:sd.s,
+				onSelect:CServiceToolView.ShowInfData});
+		}
+		$('#inf_relyafter').combobox({ valueField:1,textField:0, data:$("#infNameList").combobox("getData")})
+		$('#inf_relybefore').combobox({ valueField:1,textField:0, data:$("#infNameList").combobox("getData")})
+		CServiceToolView.SetInfResponse("返回","")
+	},
+	GroupInfData: function(dataFValue){
+		var infDataGroups={}
+		
+		for(var infdi in CServiceToolView.InfDatas){
+			var infd = CServiceToolView.InfDatas[infdi]
+			if(dataFValue=="" || infd["i"].indexOf(dataFValue)>=0){
+				var gi = infd["i"].indexOf("-")
+				var gn = gi>0? infd["i"].substring(0,gi) : '默认'
+				var gnlist = infDataGroups[gn]
+				if(undefined == gnlist){
+					gnlist = []
+					infDataGroups[gn] = gnlist
+				}
+				infd["text"] = infd["i"]
+				infd["di"] = infdi
+				gnlist.push(infd)
+			}
+		}
+		
+		var infDataView = []
+		for(var gn in infDataGroups){
+			infDataView.push({"text":gn, "children": infDataGroups[gn]})
+		}
+		return infDataView
+	},
+	ShowInfData: function(backIndex){
+		var dataFValue = HtmlTag.GetVal("dataFilter")
+		var dataIndex = CServiceToolView.GetSelectDataIndex()
+		CServiceToolView.InfDatas = CServiceTool.SearchInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(true))
+		var infShowData = CServiceToolView.GroupInfData(dataFValue)
+		$('#ltest-data').tree({
+			data: infShowData,
+			onClick: function(node){
+				CServiceToolView.SetDefaultValue(node.t)
+				CServiceToolView.SetInfData(node)
+		   }
+		})
+		try{
+			backIndex = parseInt(backIndex)
+		}catch(e){
+			backIndex = 0
+		}
+		try{
+			$("#ltest-data").tree("select",$("#ltest-data").tree("getChildren")[dataIndex+backIndex].target)
+		}catch(e){}
+	},
+	GetSelectDataIndex: function(){
+		var dataIndex = $("#ltest-data").tree("getSelected")
+		if(dataIndex == null)
+			return null
+		return parseInt(dataIndex.di)
+	},
+	SetInfData: function(infReqInfo){
+		CServiceToolView.ShowInfInput()
+		CServiceToolView.InfApiDataTime = infReqInfo.t
+		var infReqArg =  infReqInfo.a
+		for(var propName in infReqArg){
+			HtmlTag.SetVal("inf_"+ propName, infReqArg[propName])
+		}
+		CServiceToolView.SyncInfRelys(infReqInfo.r)
+		HtmlTag.SetVal("inf_desp", infReqInfo.i)
+		CServiceToolView.SetInfResponse("期望", "")
+		//CServiceToolView.SetInfResponse("返回", CServiceTool.GetInfData(HtmlTag.GetVal("infNameList"), infReqInfo.t).d)
+	},
+	SearchPropColumns: function(respVal, showProp){
+		if(respVal.length==0)
+			return []
+		var defNames = []
+		if(showProp != undefined){
+			showProp = showProp.split(",")
+			for(var pi in showProp)
+				defNames.push(showProp[pi].trim())
+		}
+		var colNames = []
+		var respIndex = 0
+		while(respIndex < respVal.length){
+			for(var colName in respVal[respIndex])
+				if(colNames.indexOf(colName)<0 && defNames.indexOf(colName)<0)
+					colNames.push(colName)
+			if(respVal.length<=2)
+				break
+			else
+				respIndex += parseInt((respVal.length-1)/2)
+		}
+		colNames.sort()
+		if(defNames.length>0)
+			colNames = defNames.concat(colNames)
+		var respColumns = []
+		for(var rvi in colNames)
+			respColumns[respColumns.length] = {field:colNames[rvi],title:colNames[rvi]}
+		return respColumns
+	},
+	SetInfResponseList: function(lresp, respVal, respStr, showProp){
+		if(DataOperation.IsObject(respVal)){
+			respVal = DataOperation.JsonToArray(respVal)
+			showProp = "key,val"
+		}else if(!DataOperation.IsObject(respVal[0])&& !DataOperation.IsArray(respVal[0]))
+			respVal = DataOperation.JsonToArray(respVal)
+		if(respVal.length ==0){
+			lresp.tabs('add',{title:"共0条",content:respStr})
+			return
+		}
+		lresp.tabs('add',{title:"共"+respVal.length+"条",
+			content:"<table id='inf_response_list' style='height:450px' data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>"})
+		var respColumns = CServiceToolView.SearchPropColumns(respVal, showProp)
+		$('#inf_response_list').datagrid({ columns:[respColumns], data: respVal, loadFilter: function(data){
+			if (typeof data.length == 'number' && typeof data.splice == 'function'){
+				data = { total: data.length, rows: data}
+			}
+			var dg = $(this);
+			var opts = dg.datagrid('options');
+			var pager = dg.datagrid('getPager');
+			pager.pagination({
+				onSelectPage:function(pageNum, pageSize){
+					opts.pageNumber = pageNum;
+					opts.pageSize = pageSize;
+					pager.pagination('refresh',{ pageNumber:pageNum, pageSize:pageSize});
+					dg.datagrid('loadData',data);
+				}
+			});
+			if (!data.originalRows){ data.originalRows = (data.rows); }
+			var start = (opts.pageNumber-1)*parseInt(opts.pageSize);
+			var end = start + parseInt(opts.pageSize);
+			data.rows = (data.originalRows.slice(start, end));
+			return data;
+		}})
+	},
+	SetInfResponse: function(respInfo, respVal, respTime, showProp){
+		var respShowInfo = CServiceToolView.GetCurApiInfo()['resp']
+		var lresp = $('#ltest-response')
+		while(lresp.tabs('getTab',0)!=null)
+			lresp.tabs('close',0)
+		var respStr = DataOperation.JsonToString(respVal)
+		var respIsStr = DataOperation.IsString(respVal) || DataOperation.IsObject(respVal)
+		if(DataOperation.IsObject(respVal) && undefined != respVal[respShowInfo])
+			respVal = respVal[respShowInfo]
+		if(DataOperation.IsArray(respVal) || DataOperation.IsObject(respVal))
+			CServiceToolView.SetInfResponseList(lresp, respVal, respStr, showProp)
+		lresp.tabs('add',{
+			title: respInfo + (undefined==respTime?"":(respTime/1000+"s")) + ", 次数 "+ CServiceToolView.ReqTimes,
+			content: respIsStr?("<pre>"+respStr+"</pre>"):respStr
+		})
+		lresp.tabs('add',{
+			title:"编辑",
+			content:'<textarea id="inf_response" cols=150 rows=30>'+respStr+'</textarea>'
+		})
+		lresp.tabs('select',0)
+	},
+	DoInfRequests: function(infRequests, infIndex, results){
+		if(infRequests == undefined){
+			var infRelys = CServiceTool.GetInfRelys(CServiceToolView.SyncInfRelys())
+			infRequests = infRelys[0]
+			infRequests.push([HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(), HtmlTag.GetVal("inf_desp")])
+			if(infRelys[1] != null)
+				infRequests.push(infRelys[1])
+			infIndex = 0
+			results = []
+		}
+		var infName = infRequests[infIndex][0].split('.')[1]
+		$.messager.progress("close")
+		$.messager.progress({text:'Request: '+infName+", "+infRequests[infIndex][2],interval:10})
+
+		SetArgTimeOut(function(infRequests, infIndex, results){
+			var infRequest = infRequests[infIndex]
+			var nowTime = (new Date()).valueOf()
+			try{
+				var infResponse = CServiceTool.DoInfRequest(HtmlTag.GetVal("hostPort"), infRequest[0], infRequest[1])
+			}catch(e){
+				var infResponse = e
+			}
+			nowTime = (new Date()).valueOf() - nowTime
+			results.push(infResponse)
+			infIndex += 1
+			if(infRequests.length<=infIndex){
+				var repeatTime = parseInt(HtmlTag.GetVal("requestRepeatTime"))
+				$.messager.progress("close")
+				if(repeatTime>=2){
+					SetArgTimeOut(CServiceToolView.DoInfRequests, repeatTime*1000)
+				}
+				CServiceToolView.SetInfResponse("返回", infResponse, nowTime)
+			}else
+				CServiceToolView.DoInfRequests(infRequests, infIndex, results)
+		}, 2, [infRequests, infIndex, results])
+	},
+	SaveInfData: function(isClear){
+		if(isClear)
+			CServiceToolView.InfApiDataTime = null
+		CServiceTool.AddInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(),
+			isClear?"":HtmlTag.GetVal("inf_response"), HtmlTag.GetVal("inf_desp"),CServiceToolView.SyncInfRelys(),
+			CServiceToolView.GetCurApiIngoreArg(), CServiceToolView.InfApiDataTime)
+
+		CServiceToolView.ShowInfData()
+	},
+	GetInfValues: function(isCondVal){
+		var apiArgs = CServiceToolView.GetCurApiArg()
+		var infValues = {}
+		for(var argIndex in apiArgs){
+			var argName = CServiceToolView.GetInfArgInputName(apiArgs[argIndex])
+			var infVal = HtmlTag.GetVal("inf_"+argName)
+			if(isCondVal && (!apiArgs[argIndex].c || infVal==""))
+				continue
+			infValues[argName] = infVal
+		}
+		return infValues
+	},
+	SyncInfRelys: function(infRelyArgs){
+		var relyNames = "before,beforeArg,after,afterArg".split(",")
+		var relyArgs = {}
+		var isShowRely = false
+		for(var ri in relyNames){
+			var relyName = relyNames[ri]
+			if(infRelyArgs != undefined){
+				HtmlTag.SetVal("inf_rely"+relyName, infRelyArgs[relyName])
+				if(infRelyArgs[relyName]!="")
+					isShowRely = true
+			}else
+				relyArgs[relyName] = HtmlTag.GetVal("inf_rely"+relyName)
+		}
+		if(isShowRely)
+			HtmlTag.SetTriggerVal("infRelyStep","style.display","","")
+		return relyArgs
+	},
+	GetInfReplaceProps: function(){
+		var apiArgs = CServiceToolView.GetCurApiArg()
+		var replaceProps = ""
+		for(var argIndex in apiArgs){
+			var argType = apiArgs[argIndex].t
+			if(argType!=null && argType.indexOf("password")>0)
+				replaceProps += "," + apiArgs[argIndex].n
+		}
+		return replaceProps
+	},
+	setDataStaticInfo: function(dataStaticInfo){
+		var dataStaticDesp = "共" + CServiceToolView.InfDatas.length
+		if(dataStaticInfo ==undefined){
+			dataStaticDesp += "条数据;"
+		}else{
+			var notRun =  CServiceToolView.InfDatas.length - dataStaticInfo.Passed - dataStaticInfo.Failed - dataStaticInfo.Warned
+			dataStaticDesp += " = " + dataStaticInfo.Passed +" Passed + " + dataStaticInfo.Failed +" Failed + " + dataStaticInfo.Warned +" Warned + " + notRun +" Excluded;"
+		}
+		HtmlTag.SetVal("dataCount","<strong>" + dataStaticDesp +"</strong>", 1,"innerHTML")
+	},
+	DoInfDataTests: function(testDatas, results, dIndex){
+		if(testDatas == undefined){
+			testDatas = $("#ltest-data").tree("getSelected")
+			if(testDatas == null) return
+			testDatas = [testDatas]
+			results = []
+			dIndex = 0
+		}
+		$.messager.progress({text:'测试: '+testDatas[dIndex].i,interval:10})
+		SetArgTimeOut(function(testDatas, results, dIndex){
+			results.push(CServiceToolView.DoInfDataTest(testDatas[dIndex]))
+			dIndex +=1
+			if(testDatas.length<=dIndex){
+				$.messager.progress("close")
+				CServiceToolView.SetInfResponse("测试结果", results, null, "result,name,info")
+			}else
+				CServiceToolView.DoInfDataTests(testDatas, results, dIndex)
+		}, 2, [testDatas, results, dIndex])
+	},
+	DoInfDataTest: function(infData){
+		var curApiInfo = CServiceToolView.GetCurApiInfo()
+		var testRes = CServiceTool.ExecuteInfTest(HtmlTag.GetVal("hostPort"), HtmlTag.GetVal("infNameList"), infData.o, curApiInfo.in, curApiInfo.out)
+		var result = "Passed"
+		if(testRes[0]%100!=0)
+			result = "Failed"
+		else if(testRes[0]%10000!=0)
+			result = "Warned"
+		return {"name":infData.i, "result":result,"info":testRes[1]}
+	},
+	DeleteInfData: function(){
+		if(!confirm("确定删除数据")){ return }
+		CServiceTool.DeleteInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.InfApiDataTime)
+		CServiceToolView.ShowInfData()
+	},
+	MoveInfData: function(isUp){
+		var dataIndex = CServiceToolView.GetSelectDataIndex()
+		if(dataIndex==null)
+			return
+		var d1 = CServiceToolView.InfDatas[dataIndex]
+		var d2 = CServiceToolView.InfDatas[(isUp?-1:1)+dataIndex]
+		if(d1!=undefined && d2!=undefined && CServiceTool.MoveInfData(HtmlTag.GetVal("infNameList"), d1.t, d2.t)){
+			CServiceToolView.ShowInfData(isUp?-1:1)
+		}
+	}
+}
+
+document.onkeydown = function(we){
+	if(119 == we.keyCode)
+		CServiceToolView.DoInfRequests()
+	else if(113 == we.keyCode)
+		CServiceToolView.SaveInfData(true)
+}
+
+CServiceToolView.InitToolSet()
+var hCond = DataOperation.GetCondition()
+var initBody = function(){
+	if(undefined != hCond.ltestToolSet){
+		CServiceToolView.SwithServer(hCond.ltestToolSet)
+		HtmlTag.SetVal("ltestToolSet",hCond.ltestToolSet)
+		HtmlTag.SetVal("infNameList",hCond.infNameList)
+		CServiceToolView.SwitchInf()
+		if(hCond.dataOrder != undefined)
+			try{
+				var nodes =$("#ltest-data").tree("getChildren")
+				for(var ni in nodes){
+					var node = nodes[ni]
+					if(node.t==hCond.dataOrder)
+						node.target.click()
+				}
+			}catch(e){}
+	}
+	$("#dataFilter").textbox({prompt:'请输入过滤条件...', onChange: function(nv, ov){
+		CServiceToolView.ShowInfData()
+	}})
+}
+setTimeout(initBody,100)
+</script>
+
+</html>
