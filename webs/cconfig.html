@@ -10,9 +10,11 @@
 <link rel="stylesheet" type="text/css" href="js/themes/icon.css">
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script type="text/javascript" src="js/jquery.easyui.min.js"></script>
-<script src="CTestClient.js"></script>
+
+<script src="cservice.js"></script>
 <script src="/cservice/js"></script>
 <script src="cplantree.js"></script>
+
 </head>
 
 <header class="navbar  navbar-fixed-top navbar-static-top bs-docs-nav" role="banner">
@@ -21,7 +23,7 @@
 			<ul class="nav navbar-nav">
 				<li><a href="/cplan.html">测试计划</a> </li>
 				<li><a href="/cplancase.html">测试用例</a></li>
-				<li><a href="/cplanenv.html">测试环境</a></li>
+				<li><a href="/cdeploy.html">提测&发布</a></li>
 				<li><a href="/ctools.html">测试工具</a></li>
 				<li style= "background:#e8e8e8"><a href="cconfig.html">配置管理</a></li>
 			</ul>
@@ -64,7 +66,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 
 	<div id="treeAdd" class="easyui-dialog" title="目录"
 		data-options="iconCls:'icon-save',closable:true,closed:true"
-		style="width: 600px; height: 80px; padding: 10px;">
+		style="width: 550px; padding: 10px;">
 		<input id='treeName' size=50 />&nbsp;&nbsp; <input type='checkbox'
 			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="#"
 			onclick="treeTool.saveTreeNode()" class="easyui-linkbutton">保存目录</a>
@@ -73,9 +75,9 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 <!-- tree data -->
 	<div id="treedataadd" class="easyui-dialog" title="配置"
 		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
-		style="width: 900px; height: 420px; padding: 10px;">
+		style="padding: 10px;">
 		<table>
-			<tr><td>主题 </td> <td> <input id='subject' size=37 />
+			<tr><td>主题 </td> <td> <input id='subject' size=40 />
 				&nbsp;&nbsp; 标签 <input id='ckey' size=40/>&nbsp;&nbsp; 
 				<select id='stype'>
 					<option value='1'>字符串</option>
@@ -84,13 +86,19 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 					<option value='4'>其他</option>
 				</select>
 			<tr><td colspan=2> <br> </td></tr>
-			<tr><td>名称 </td> <td> <input id='cname' size=100> </td></tr>
+			<tr><td>名称 </td> <td> <input id='cname' size=40>
+			&nbsp;&nbsp; 别名 <input id='calias' size=40/>&nbsp;&nbsp; 
+				<select id='status'>
+					<option value='1'>生效</option>
+					<option value='0'>下线</option>
+				</select>
+			</td></tr>
 			<tr><td colspan=2> <br> </td></tr>
-			<tr><td>内容 </td> <td> <textarea id='ccontent' cols=110 rows=14></textarea> </td></tr>
+			<tr><td>内容 </td> <td> <textarea id='ccontent' cols=100 rows=10></textarea> </td></tr>
 		</table>
 		
 		<br><a href="#" onclick="treeDataTool.saveTreeData(1)"
-			class="easyui-linkbutton"> 保存</a>&nbsp;&nbsp;&nbsp; <a href="#"
+			class="easyui-linkbutton"> 保存并关闭</a>&nbsp;&nbsp;&nbsp; <a href="#"
 			onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">保存并添加</a>
 	</div>
 	
@@ -113,7 +121,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		</div>
 
 		<div data-options="multiple:true">
-			<table id='treedatalist' style='height: 800px'
+			<table id='treedatalist' style=''
 				data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>
 		</div>
 	</div>
@@ -141,12 +149,23 @@ treeDataTool = {
 		treeDataTool.fileLink = cdatas['fileLink']
 		var datas = cdatas['data']
 
-		var dataCols = [ { field : 'configid',title : '操作',width : 65,formatter : function(value, row, index) {
-			return '<select onChange=\'treeDataTool.operateTreeData(' + value +', this.value)\'> <option>ID '+value+'</option> <option value=1>修改</option> <option value=2>删除</option> </select>'
+		var dataCols = [
+		  { field : 'subject',title : '主题'},
+		  { field : 'ckey',title : '标签'},
+		  { field : 'cname',title : '配置名'},
+		  { field : 'calias',title : '别名'},
+		  { field : 'status',title : '状态',formatter : function(value, row, index) {
+			return value==0?'下线':'生效'
 		  }},
-		  { field : 'subject',title : '主题',width : 100},
-		  { field : 'cname',title : '配置名',width : 200},
-		  { field : 'stype',title : '类型',width : 60,formatter : function(value, row, index) {
+		  { field : 'owner',title : '修改人'},
+		  { field : 'modifytime',title : '修改时间',width : 120},
+		  { field : 'configid',title : '操作',formatter : function(value, row, index) {
+			return [
+					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
+					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
+				].join("&nbsp;")
+		  }},
+		  { field : 'stype',title : '类型',formatter : function(value, row, index) {
 		    var v = ctypeDefine[value]
 			if(value=='3'){
 			    var l = treeDataTool.fileLink + row.cname
@@ -154,10 +173,7 @@ treeDataTool = {
 			}
 			return v;
 		  }},
-		  { field : 'ckey',title : '标签',width : 200},
-		  { field : 'owner',title : '修改人',width : 80},
-		  { field : 'modifytime',title : '修改时间',width : 130},
-		  { field : 'ccontent',title : '内容',width : 500}]
+		  { field : 'ccontent',title : '内容'}]
 
 		$('#treedatalist').datagrid( treeTool.getLoadDataJson(dataCols, datas))
 	},
@@ -186,6 +202,8 @@ treeDataTool = {
 		else if (tdata) {
 			treeDataTool.tdata = tdata
 			$("#cname").val(tdata.cname)
+			$("#calias").val(tdata.calias)
+			$("#status").val(tdata.status)
 			$("#subject").val(tdata.subject)
 			$("#ckey").val(tdata.ckey)
 			$("#stype").val(tdata.stype)
@@ -199,6 +217,8 @@ treeDataTool = {
 		var tdata = treeDataTool.tdata
 
 		var cname = $("#cname").val()
+		var calias = $("#calias").val()
+		var status = $("#status").val()
 		var subject = $("#subject").val()
 		var ckey = $("#ckey").val()
 		var stype = $("#stype").val()
@@ -209,7 +229,7 @@ treeDataTool = {
 		var nid2 = treeTool.nid2
 		var configid = treeTool.isNew ? undefined : tdata.configid
 
-		CTestPlanAPi.saveTestConfig(cname,subject,ckey,stype,ccontent,fnid,nid1,nid2,configid)
+		CTestPlanAPi.saveTestConfig(cname,calias,status,subject,ckey,stype,ccontent,fnid,nid1,nid2,configid)
 
 		treeDataTool.tdata = undefined
 		if (isClose)

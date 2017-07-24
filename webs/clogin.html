@@ -9,7 +9,16 @@
 <body class="easyui-layout">
 	<form action='/cservice/AuthApi/checkLogin' method='post'>
 		<input id='loginfrom' name='loginfrom' type='hidden'/>
-	<br>&nbsp;&nbsp;用户名：<input name='name'/> 密码：  <input name='password' type='password'/> <input type='submit' value='登陆' /> 
+	<br>&nbsp;&nbsp;登录名：<input name='name'/> 密码：  <input name='passwd' type='password'/> <input type='submit' value='登陆' /> 
+	</form>
+	
+	<form action='/cservice/AuthApi/registerOwner' method='post'>
+	登录失败，请注册
+	<br>&nbsp;&nbsp;登录名：<input name='cname'/>
+	&nbsp;&nbsp;别名(建议中文)：<input name='calias'/>
+	&nbsp;&nbsp;密码：<input name='passwd' type='password'/> 
+	&nbsp;&nbsp;邮箱地址<input name='email'/> 
+	<input type='submit' value='注册' /> 
 	</form>
 </body>
 

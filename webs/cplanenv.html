@@ -9,9 +9,11 @@
 <link rel="stylesheet" type="text/css" href="js/themes/icon.css">
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script type="text/javascript" src="js/jquery.easyui.min.js"></script>
-<script src="CTestClient.js"></script>
+
+<script src="cservice.js"></script>
 <script src="/cservice/js"></script>
 <script src="cplantree.js"></script>
+
 </head>
 
 <header class="navbar  navbar-fixed-top navbar-static-top bs-docs-nav" role="banner">
@@ -20,7 +22,7 @@
 			<ul class="nav navbar-nav">
 				<li><a href="/cplan.html">测试计划</a> </li>
 				<li><a href="/cplancase.html">测试用例</a></li>
-				<li style= "background:#e8e8e8"><a href="/cplanenv.html">测试环境</a></li>
+				<li style= "background:#e8e8e8"><a href="/cdeploy.html">提测&发布</a></li>
 				<li><a href="/ctools.html">测试工具</a></li>
 				<li><a href="cconfig.html">配置管理</a></li>
 			</ul>
@@ -135,7 +137,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 					<option value='5'>固定使用</option>
 					<option value='6'>虚拟机</option>
 				</select>
-				接口人：陈志建 00195564 、郭新 gwx343376
+				
 			</div>
 		</div>
 

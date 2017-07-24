@@ -4,428 +4,41 @@ Created on 2016-10-2
 
 @author: chinple
 '''
-from db.sqllib import SqlConnFactory, Sql
-from db.mysqldb import MysqldbConn
+from db.sqllib import Sql
 from cserver import cprop, cloudModule
-from libs.timmer import TimmerOperation
 import time
-from libs.syslog import slog
 from libs.objop import ObjOperation
-import base64
 from server.csession import LocalMemSessionHandler
 from server.chandle import RedirectException, ReturnFileException
-from libs.parser import toJsonObj
-from server.cclient import curl
-
-class CtestDbOp:
-    def __init__(self):
-        sqlConfig = {'host':cprop.getVal("db", "host"), 'port':cprop.getInt("db", "port"),
-            'user':cprop.getVal("db", "user"), 'passwd':cprop.getVal("db", "passwd"),
-            'db':cprop.getVal("db", "db"), 'charset':'utf8'}
-        self.sqlConn = SqlConnFactory(MysqldbConn, sqlConfig)
-
-    def saveCtree(self, name, fnid=-1, nid=None):
-        sql = self.sqlConn.getSql("ctree", Sql.insert if nid is None else Sql.update, True)
-        sql.appendValueByJson({'name':name, "fnid":fnid, "nid":nid})
-        sql.appendWhere("nid", nid)
-        return sql.execute()
-
-    def getCtree(self, fnid=None, name=None, nid=None):
-        sql = self.sqlConn.getSql("ctree", Sql.select, True)
-        sql.appendWhereByJson({'name':name, "fnid":fnid, "nid":nid})
-        return sql.execute()
-    def deleteCtree(self, nid):
-        if Sql.isEmpty(nid):
-            return 0
-        sql = self.sqlConn.getSql("ctree", Sql.delete, True)
-        sql.appendWhere("nid", nid)
-        return sql.execute()
-# test case
-    def saveCtestcase(self, scenario=None, tags=None, name=None, ttype=None, priority=None, steps=None, remark=None, owner=None,
-            fnid=None, nid1=None, nid2=None, caseid=None):
-        modifytime = TimmerOperation.getFormatTime(time.time())
-        sql = self.sqlConn.getSql("testcase", Sql.insert if Sql.isEmpty(caseid) else Sql.update, True)
-        sql.appendValueByJson({'scenario':scenario, 'tags':tags, 'name':name, "ttype":ttype, "priority":priority,
-            'steps':steps, "remark":remark, "owner":owner, 'modifytime':modifytime,
-            "fnid":fnid, "nid1":nid1, "nid2":nid2, "caseid":caseid})
-        sql.appendWhere("caseid", caseid)
-        return sql.execute()
-
-    def getCtestcase(self, fnid=None, nid1=None, nid2=None,
-            searchKey=None, ttype=None, priority=None, name=None, owner=None, caseid=None):
-        sql = self.sqlConn.getSql("testcase", Sql.select, True)
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
-
-        sql.appendWhereByJson({'name':name, "ttype":ttype, "priority":priority,
-            "owner":owner, "caseid":caseid})
-        if not Sql.isEmpty(searchKey):
-            searchKey = '%%%s%%' % searchKey
-            sql.appendCondition("(name like '%s' or tags like '%s'or scenario like '%s')" % (searchKey, searchKey, searchKey))
-        sql.orderBy("scenario,name")
-        return sql.execute()
-
-    def deleteCtestcase(self, caseid):
-        if Sql.isEmpty(caseid):
-            return 0
-        sql = self.sqlConn.getSql("testcase", Sql.delete, True)
-        sql.appendWhere("caseid", caseid)
-        return sql.execute()
-
-    def _checkDate(self, d):
-        return None if Sql.isEmpty(d) else d
-# test plan
-    def saveCtestplan(self, name=None, owner=None, tags=None, summary=None, issues=None,
-            ptype=None, priority=None, status=None, progress=None,
-            pstarttime=None, pendtime=None, starttime=None, endtime=None,
-            mailto=None, fnid=None, nid1=None, nid2=None, planid=None):
-        # status: created, executing, finished, paused
-        pstarttime = self._checkDate(pstarttime)
-        pendtime = self._checkDate(pendtime)
-        starttime = self._checkDate(starttime)
-        endtime = self._checkDate(endtime)
-
-        sql = self.sqlConn.getSql("testplan", Sql.insert if Sql.isEmpty(planid) else Sql.update, True)
-        sql.appendValueByJson({'name':name, 'owner':owner, 'tags':tags, 'summary':summary, 'issues':issues,
-            'ptype':ptype, 'priority':priority, "status":status, "progress":progress,
-            'pstarttime':pstarttime, "pendtime":pendtime, "starttime":starttime, 'endtime':endtime,
-            "mailto":mailto, "fnid":fnid, "nid1":nid1, "nid2":nid2, "planid":planid})
-        sql.appendWhere("planid", planid)
-        return sql.execute()
-
-    def saveCtestplanStatus(self, planid, status=None, progress=None, starttime=None, endtime=None,
-            mailto=None, mailfrom=None, mailcc=None):
-        if Sql.isEmpty(planid):
-            return 0
-        sql = self.sqlConn.getSql("testplan", Sql.update, True)
-        sql.appendValueByJson({ 'status':status, 'progress':progress, 'starttime':starttime, 'endtime':endtime,
-            'mailto':mailto, 'mailfrom':mailfrom, 'mailcc':mailcc})
-        sql.appendWhere("planid", planid)
-        return sql.execute()
-
-    def getCtestplan(self, fnid=None, nid1=None, nid2=None,
-            nameOrTags=None, ptype=None, priority=None, inStatus=None, outStatus=None,
-            starttime1=None, starttime2=None, owner=None, name=None, tags=None, planid=None):
-        sql = self.sqlConn.getSql("testplan", Sql.select, True)
-
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
-
-        if not Sql.isEmpty(nameOrTags):
-            nameOrTags = '%%%s%%' % nameOrTags
-            sql.appendCondition("(name like '%s' or tags like '%s' or owner like '%s')" % (nameOrTags, nameOrTags, nameOrTags))
-        if not Sql.isEmpty(name):
-            name = '%%%s%%' % name
-            sql.appendWhere('name', name, 'like')
-        if not Sql.isEmpty(tags):
-            tags = '%%%s%%' % tags
-            sql.appendWhere('tags', tags, 'like')
-        
-        sql.appendWhereByJson({"owner":owner, 'priority':priority, 'status':inStatus, "planid":planid})
-        sql.appendWhere('ptype', ptype, 'in')
-        sql.appendWhere('status', outStatus, '!=')
-        sql.appendWhere("starttime", starttime1, ">=").appendWhere("starttime", starttime2, "<")
-
-        sql.orderBy("status,pendtime,ptype,fnid desc,tags,name")
-        return sql.execute()
-
-    def deleteCtestplan(self, planid):
-        if Sql.isEmpty(planid):
-            return 0
-        sql = self.sqlConn.getSql("testplan", Sql.delete, True)
-        sql.appendWhere("planid", planid)
-        return sql.execute()
-
-# plan related
-    def savePlancase(self, planid=None, caseid=None, scenario=None, tags=None, name=None, owner=None, status=None, remark=None, plancaseid=None):
-        # status: not-start, executing, passed, failed
-        modifytime = TimmerOperation.getFormatTime(time.time())
-        sql = self.sqlConn.getSql("plancase", Sql.insert if Sql.isEmpty(plancaseid) else Sql.update, True)
-        sql.appendValueByJson({'planid':planid, "caseid":caseid, "tags":tags, "scenario":scenario, "name":name,
-            'owner':owner, 'remark':remark, "status":status, "modifytime":modifytime})
-        sql.appendWhere("plancaseid", plancaseid)
-        return sql.execute()
-
-    def setPlancase(self, plancaseid, status, owner):
-        # status: not-start, executing, passed, failed
-        sql = self.sqlConn.getSql("plancase", Sql.update, True)
-        sql.appendValueByJson({"status":status, 'owner':owner})
-        sql.appendWhere("plancaseid", plancaseid)
-        return sql.execute()
-
-    def getPlancase(self, planid, caseid=None, owner=None, status=None, caseTags=None, caseName=None, fields='*'):
-        sql = self.sqlConn.getSql("plancase", Sql.select, True, fields)
-        sql.appendWhereByJson({'planid':planid, "caseid":caseid,
-            "status":status })
-
-        if not Sql.isEmpty(owner):
-            owner = '%%%s%%' % owner
-            sql.appendCondition("(owner like '%s')" % (owner))
-
-        if not Sql.isEmpty(caseTags):
-            caseTags = '%%%s%%' % caseTags
-            sql.appendCondition("(tags like '%s' or scenario like '%s')" % (caseTags, caseTags))
-
-        if not Sql.isEmpty(caseName):
-            caseName = '%%%s%%' % caseName
-            sql.appendCondition("(name like '%s')" % (caseName))
-
-        sql.orderBy('tags,scenario,caseid')
-        return sql.execute()
-
-    def countPlancase(self, planid=None, status=None):
-        sql = self.sqlConn.getSql("plancase", Sql.select, True, 'count(*) as count')
-        sql.appendWhereByJson({'planid':planid, "status":status })
-        return sql.execute()
-
-    def deletePlancase(self, plancaseid):
-        if Sql.isEmpty(plancaseid):
-            return 0
-        sql = self.sqlConn.getSql("plancase", Sql.delete, True)
-        sql.appendWhere("plancaseid", plancaseid)
-        return sql.execute()
-
-    def savePlandaily(self, planid, day, status, progress, caseprogress,
-            costtime, costman, summary, issues, dailyId=None):
-        sql = self.sqlConn.getSql("plandaily", Sql.insert if Sql.isEmpty(dailyId) else Sql.update, True)
-        sql.appendValueByJson({'planid':planid, "day":day, "status":status, "progress":progress, 'caseprogress':caseprogress,
-            'costtime':costtime, 'costman':costman, 'summary':summary, 'issues':issues, "dailyId":dailyId})
-        sql.appendWhere("dailyId", dailyId)
-        return sql.execute()
-
-    def getPlandaily(self, planid=None, day=None, dailyId=None, limit=None, status=None):
-        sql = self.sqlConn.getSql("plandaily", Sql.select, True)
-        sql.appendWhereByJson({'planid':planid, "dailyId":dailyId, 'day':day, "status":status})
-        sql.limit = limit
-        sql.orderBy("day DESC")
-        return sql.execute()
-    
-# test env
-    def getTestEnv(self, envname, hostip, vmaccount, owner, ownerStatus, fnid, nid1, nid2, testenvid=None):
-        sql = self.sqlConn.getSql("testenv", Sql.select, True)
-        sql.appendWhereByJson({'hostip': hostip,
-            'owner':owner, 'ownerStatus': ownerStatus})
-
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
-
-        if not Sql.isEmpty(vmaccount):
-            vmaccount = '%%%s%%' % vmaccount
-            sql.appendCondition("(vmaccount like '%s')" % (vmaccount))
-
-        if not Sql.isEmpty(envname):
-            envname = '%%%s%%' % envname
-            sql.appendCondition("(envname like '%s' or tags like '%s')" % (envname, envname))
-        # 'vmammounts': vmammounts
-        # 'ownerStartTime': ownerStartTime, 'ownerEndTime': ownerEndTime,
-        sql.appendWhere("testenvid", testenvid)
-        return sql.execute()
-
-    def saveTestEnv(self, envname, tags, hostip, hostaccount, hostinfo,
-            vmaccount, vmammounts, vminfo, owner, ownerStatus, ownerInfo, ownerStartTime, ownerEndTime,
-            fnid, nid1, nid2, testenvid=None):
-
-        sql = self.sqlConn.getSql("testenv", Sql.insert if Sql.isEmpty(testenvid) else Sql.update, True)
-        sql.appendValueByJson({'envname':envname, 'tags':tags, 'hostip': hostip, 'hostaccount': hostaccount, 'hostinfo': hostinfo,
-            'vmaccount': vmaccount, 'vmammounts': vmammounts, 'vminfo':vminfo,
-            'owner':owner, 'ownerStatus': ownerStatus, 'ownerInfo': ownerInfo, 'ownerStartTime': ownerStartTime, 'ownerEndTime': ownerEndTime,
-            'fnid': fnid, 'nid1': nid1, 'nid2': nid2})
-        sql.appendWhere("testenvid", testenvid)
-        return sql.execute()
-
-    def deleteTestEnv(self, testenvid):
-        if Sql.isEmpty(testenvid):
-            return 0
-        sql = self.sqlConn.getSql("testenv", Sql.delete, True)
-        sql.appendWhere("testenvid", testenvid)
-        return sql.execute()
-
-# test config
-    def getTestConfig(self, subject=None, stype=None, cname=None, ckey=None, fnid=None, nid1=None, nid2=None, configid=None):
-        sql = self.sqlConn.getSql("cconfig", Sql.select, True)
-        sql.appendWhereByJson({'configid': configid, 'stype':stype})
-
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
-
-        if not Sql.isEmpty(subject):
-            subject = '%%%s%%' % subject
-            sql.appendCondition("(subject like '%s')" % (subject))
-
-        if not Sql.isEmpty(cname):
-            cname = '%%%s%%' % cname
-            sql.appendCondition("(cname like '%s')" % (cname))
-        
-        if not Sql.isEmpty(ckey):
-            ckey = '%%%s%%' % ckey
-            sql.appendCondition("(ckey like '%s')" % (ckey))
-
-        return sql.execute()
-
-    def saveTestConfig(self, cname, subject, ckey, stype, ccontent, owner, fnid, nid1, nid2, configid=None):
-        modifytime = TimmerOperation.getFormatTime(time.time())
-
-        sql = self.sqlConn.getSql("cconfig", Sql.insert if Sql.isEmpty(configid) else Sql.update, True)
-        sql.appendValueByJson({'cname':cname, 'subject':subject, 'ckey': ckey, 'stype': stype, 'ccontent': ccontent,
-            "owner":owner, 'modifytime':modifytime, 'fnid': fnid, 'nid1': nid1, 'nid2': nid2})
-        sql.appendWhere("configid", configid)
-        return sql.execute()
-
-    def deleteTestConfig(self, configid):
-        if Sql.isEmpty(configid):
-            return 0
-        sql = self.sqlConn.getSql("cconfig", Sql.delete, True)
-        sql.appendWhere("configid", configid)
-        return sql.execute()
-
-class EmailReportor:
-    def __init__(self):
-        self.emailDailySubject = cprop.getVal('plan', 'emailDailySubject')
-        self.emailDailySp = cprop.getVal('plan', 'emailDailySp')
-        self.emailDailyRow = cprop.getVal('plan', 'emailDailyRow')
-        self.emailDailyBody = cprop.getVal('plan', 'emailDailyBody')
-        self.planLink = cprop.getVal('plan', 'planLink')
-        self.emailDailyTitle = cprop.getVal('plan', 'emailDailyTitle')
-
-        self.riskStatusDefine = cprop.getVal('plan', 'planStatus').split()
-        self.emailPlanBodyTemplate = cprop.getVal('plan', 'emailPlanBodyTemplate')
-        emailPlanRowFormat = 'textarea'
-        self.emailPlanRowFormat = ObjOperation.tryGetVal({'textarea':"<textarea>%s</textarea>", 'pre':"<pre>%s</pre>"}, emailPlanRowFormat, '%s')
-        self.emailPlanRow = cprop.getVal('plan', 'emailPlanRow')
-        self.emailPlanRowTitle = cprop.getVal('plan', 'emailPlanRowTitle')
-        
-        self.reportBodyTemplate = cprop.getVal('plan', 'reportBodyTemplate')
-
-# plan report
-    def formatPlanreport(self, planReportTarget, planReportDetail, planreportSummary, planreportIssues, planReportCaseSummary):
-        planreport = open(self.reportBodyTemplate).read()
-        planreport = planreport.replace('{planReportTarget}', planReportTarget)
-        planreport = planreport.replace('{planReportDetail}', planReportDetail)
-        planreport = planreport.replace('{planreportSummary}', planreportSummary)
-        planreport = planreport.replace('{planreportIssues}', planreportIssues)
-        planreport = planreport.replace('{planReportCaseSummary}', planReportCaseSummary)
-        return planreport
-
-# plan group
-    def formatSubject(self, plan, day):
-        plan['day'] = day
-        plan['planLink'] = self.planLink
-        subject = self.emailDailySubject.format(**plan)
-        title = self.emailDailyTitle.format(**plan)
-        return subject, title
-
-    def formatDaily(self, daily):
-        day, progress, caseprogress = daily['day'], daily['progress'], daily['caseprogress']
-        summary, issues = daily['summary'], daily['issues']
-        daily['day'] = day.strftime("%Y-%m-%d")
-        daily['progress'] = '%s%%' % progress
-        daily['caseprogress'] = 'N/A' if caseprogress is None else ('%s%%' % caseprogress)
-        space = '    '
-        daily['summary'] = space + ('' if summary is None else summary.replace('\n', '\n' + space))
-        daily['issues'] = space + ('' if issues is None else issues.replace('\n', '\n' + space))
-        return self.emailDailyRow.format(**daily)
-    
-    def formatPlans(self, dailys, title):
-        return self.emailDailyBody.format(plan=("\n" + self.emailDailySp).join(dailys), sp=self.emailDailySp, title=title)
-
-    def addPlangroupTitle(self, name, plans):
-        plans.append(self.emailPlanRowTitle.format(name=name))
-    def addPlangroup(self, plan, daily, plans):
-        plan['status'] = self.riskStatusDefine[plan['status']]
-        plan['planLink'] = self.planLink
-        plan['summary'] = self.emailPlanRowFormat % plan['summary']
-        plan['pstarttime'] = str(plan['pstarttime']).split(' ')[0]
-        plan['pendtime'] = str(plan['pendtime']).split(' ')[0]
-        plan['endtime'] = str(plan['endtime']).split(' ')[0]
-        plan['starttime'] = str(plan['starttime']).split(' ')[0]
-
-        daily = daily[0] if len(daily) > 0 else None
-
-        plan['progress'] = '' if daily is None else ('%s%%' % daily['progress'])
-        plan['dailyDay'] = '' if daily is None else str(daily['day']).split(' ')[0]
-        plan['dailySummary'] = '' if daily is None else (self.emailPlanRowFormat % daily['summary'])
-        plan['dailyIssues'] = '' if daily is None else (self.emailPlanRowFormat % daily['issues'])
-        plans.append(self.emailPlanRow.format(**plan))
-
-    def formPlangroup(self, plans):
-        return open(self.emailPlanBodyTemplate).read().replace("{plans}", "".join(plans))
-
-    def makeEmail(self, sender, receiver, ccReceiver, subject, htmlBody):
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-
-        mimeMail = MIMEMultipart()
-        mimeMail.add_header("Date", time.strftime("%A, %d %B %Y %H:%M"))
-        mimeMail.add_header("From", sender)
-        mimeMail.add_header("To", receiver)
-        mimeMail.add_header("cc", ccReceiver)
-        mimeMail.add_header("Subject", subject)
-        mimeMail.attach(MIMEText(_text=htmlBody.encode("utf8"), _subtype="html", _charset="utf8"))
-        return mimeMail
-
-    def sendEmail(self, smtpAddr, smtpLogin, smtpSender, receiver, ccReceiver, mimeMail):
-        try:
-            if receiver == "":
-                raise Exception("No receiver")
-            receiver = (receiver + ";" + ccReceiver).replace(';;', ';').split(";")
-            smtpAccount, smtpPasswd = base64.decodestring(smtpLogin).split("/")
-            from smtplib import SMTP
-            slog.info("Sending mail(SMTP %s):\n\t%s -> %s" % (smtpAddr, smtpAccount, receiver))
-            smtp = smtpAddr.split(':')
-            smtpServer = smtp[0]
-            smtpPort = int(ObjOperation.tryGetVal(smtp, 1, 25))
-            smtpClient = SMTP(smtpServer, smtpPort)
-            try:
-                smtpClient.ehlo()
-                smtpClient.login(smtpAccount, smtpPasswd)
-            except:pass
-            smtpClient.sendmail(smtpSender, receiver, mimeMail.as_string())
-            smtpClient.quit()
-            return 'Success'
-        except Exception as ex:
-            slog.info("Fail to send mail for: %s" % ex)
-            return str(ex)
-
-    # test cases
-    def formatTestCase(self, testcases):
-        cases = []
-        for t in testcases:
-            cases.append(cprop.getVal("testcase", 'caseRow').format(**t))
-        return open(cprop.getVal("testcase", 'caseReportTemplate')).read().replace("{testcases}", "".join(cases))
+from testexecdb import CtestDbOp, EmailReportor
 
 @cloudModule()
 class CTestPlanAPi:
     def __init__(self):
         self.dbapi = CtestDbOp()
         self.emailRp = EmailReportor()
+        self.enumContainer = {}
+
+    def __setup__(self):
+        self._addEnum("planStatus", cprop.getVal("plan", "planStatus"), True)
+        self._addEnum("planCaseStatus", cprop.getVal("plan", "planCaseStatus"), True)
+        self._addEnum("planPriority", cprop.getVal("plan", "planPriority"), False)
+        self._addEnum("planType", cprop.getVal("plan", "planType"), False)
+
+        self._addEnum("deployPhase", "未提测 测试 预发布  正式发布 完成", True)
+        self._addEnum("deployStatus", "未部署 部署中 部署成功 部署失败 冻结 完成", True)
+
+    def _addEnum(self, enumname, valstr, isIndexAsValue):
+        vals = valstr.split()
+        e = []
+        for i in range(len(vals)):
+            v = vals[i]
+            e.append({'v': str(i) if isIndexAsValue else v, 'n': v})
+        self.enumContainer[enumname] = e
+
+    def getEnum(self, enumname):
+        return self.enumContainer[enumname]
+
     def deleteCtree(self, nid):
         return self.dbapi.deleteCtree(nid)
     def saveCtree(self, name, fnid=-1, nid=None):
@@ -437,9 +50,19 @@ class CTestPlanAPi:
             fnid=None, nid1=None, nid2=None, caseid=None, __session__=None):
         owner = __session__['name']
         return self.dbapi.saveCtestcase(scenario, tags, name, ttype, priority, steps, remark, owner, fnid, nid1, nid2, caseid)
+    def updateCtestcase(self, caseid, testcase):
+        if Sql.isEmpty(caseid):return 0
+        tryget = ObjOperation.tryGetVal
+        return self.dbapi.saveCtestcase(name=tryget(testcase, 'name', None), priority=tryget(testcase, 'priority', None),
+            ttype=tryget(testcase, 'ttype', None), owner=tryget(testcase, 'owner', None),
+            remark=tryget(testcase, 'remark', None), caseid=caseid)
+
     def getCtestcase(self, fnid=None, nid1=None, nid2=None,
             searchKey=None, ttype=None, priority=None, name=None, owner=None, caseid=None):
         return self.dbapi.getCtestcase(fnid, nid1, nid2, searchKey, ttype, priority, name, owner, caseid)
+
+    def getPlancases(self, fnid, planid):
+        return self.dbapi.getCtestcase(fnid, planid=planid)
 
     def exportCtestcase(self, fnid=None, nid1=None, nid2=None, searchKey=None, ttype=None, priority=None, owner=None):
         raise ReturnFileException(self.emailRp.formatTestCase(self.dbapi.getCtestcase(fnid, nid1, nid2, searchKey, ttype, priority, owner=owner)),
@@ -448,11 +71,12 @@ class CTestPlanAPi:
     def deleteCtestcase(self, caseid):
         return self.dbapi.deleteCtestcase(caseid)
 
-    def saveCtestplan(self, name=None, owner=None, tags=None, summary=None, issues=None,
+    def saveCtestplan(self, name=None, owner=None, version=None, tags=None, summary=None, issues=None,
             ptype=None, priority=None, status=None, progress=None,
             pstarttime=None, pendtime=None, starttime=None, endtime=None,
             mailto=None, fnid=None, nid1=None, nid2=None, planid=None):
-        return self.dbapi.saveCtestplan(name, owner, tags, summary, issues, ptype, priority, status, progress, pstarttime, pendtime, starttime, endtime, mailto, fnid, nid1, nid2, planid)
+        if Sql.isEmpty(version):version = None
+        return self.dbapi.saveCtestplan(name, owner, version, tags, summary, issues, ptype, priority, status, progress, pstarttime, pendtime, starttime, endtime, mailto, fnid, nid1, nid2, planid)
 
     def updateCtestplan(self, planid, plan):
         if Sql.isEmpty(planid):return 0
@@ -480,8 +104,8 @@ class CTestPlanAPi:
             plan['endtime'] = str(plan['endtime']).split()[0]
             plan['reportTarget'] = cprop.getVal('plan', 'reportTarget').format(**plan)
             plan['reportSummary'] = cprop.getVal('plan', 'reportSummary').format(**plan)
-            case = self.countPlancase(planid, 1)
-            plan['reportSummary'] = plan['reportSummary'].format(**case)
+            caseprogress = self.calcPlancaseprogress(planid)
+            plan['reportSummary'] = plan['reportSummary'].format(caseprogress=caseprogress)
         return plans
 
     def getCtestplancasereport(self, planid):
@@ -537,8 +161,8 @@ class CTestPlanAPi:
         self.dbapi.saveCtestcase(scenario=scenario, name=name, remark=remark, caseid=caseid)
         self.dbapi.savePlancase(scenario=scenario, name=name, remark=remark, owner=owner, plancaseid=plancaseid)
 
-    def getPlancase(self, planid=None, status=None, owner=None, caseTags=None, caseName=None):
-        return self.dbapi.getPlancase(planid, None, owner, status, caseTags, caseName)
+    def getPlancase(self, planid=None, status=None, owner=None, scenarioName=None, caseName=None):
+        return self.dbapi.getPlancase(planid, None, owner, status, scenarioName, caseName)
 
     def deletePlancase(self, plancaseid):
         return self.dbapi.deletePlancase(plancaseid)
@@ -546,23 +170,31 @@ class CTestPlanAPi:
     def setPlancase(self, plancaseid, status, __session__):
         return self.dbapi.setPlancase(plancaseid, status, __session__['name'])
 
+    def resetPlancaseresult(self, planid, __session__):
+        if Sql.isEmpty(planid):return 0
+        return self.dbapi.setPlancase(None, 0, __session__['name'], planid, curstatus=1)
+
     def savePlandaily(self, planid, day, status, progress, caseprogress, costtime, costman,
             starttime, endtime, summary, issues, dailyId=None):
         if dailyId is None:
             daily = self.dbapi.getPlandaily(planid, day)
             if len(daily) > 0:
                 dailyId = daily[0]['dailyId']
-        caseprogress = self.countPlancase(planid, 1)['percent']
+        caseprogress = self.calcPlancaseprogress(planid)
         self.dbapi.saveCtestplanStatus(planid, status, progress, starttime, endtime)
         return self.dbapi.savePlandaily(planid, day, status, progress, caseprogress, costtime, costman, summary, issues, dailyId)
 
     def getPlandaily(self, planid=None, day=None, dailyId=None):
         return self.dbapi.getPlandaily(planid, day, dailyId)
 
-    def countPlancase(self, planid=None, status=None):
-        count, total = self.dbapi.countPlancase(planid, status)[0]['count'], self.dbapi.countPlancase(planid)[0]['count']
-        percent = 0 if total <= 0 else count * 100 / total
-        return {'count':count, 'total':total, 'percent':percent}
+    def _summaryPlancases(self, planid):
+        paased, failed, total = self.dbapi.countPlancase(planid, 1)[0]['count'], self.dbapi.countPlancase(planid, 2)[0]['count'], self.dbapi.countPlancase(planid)[0]['count']
+        percent = 0 if total <= 0 else (paased + failed) * 100 / total
+        return {'paased':paased, 'failed':failed, 'total':total, 'percent':percent}
+
+    def calcPlancaseprogress(self, planid):
+        plancase = self._summaryPlancases(planid)
+        return "" if plancase['total'] == 0 else "{percent}% ({paased} + {failed}/{total})".format(**plancase)
 
     planStatusFinished = 3
     def getPlanSummary(self, planid):
@@ -667,68 +299,121 @@ class CTestPlanAPi:
     def getTestConfig(self, subject=None, stype=None, cname=None, ckey=None, fnid=None, nid1=None, nid2=None, configid=None):
         return {'fileLink':cprop.getVal('cconfig', 'fileLink'), 'data':self.dbapi.getTestConfig(subject, stype, cname, ckey, fnid, nid1, nid2, configid)}
 
-    def saveTestConfig(self, cname, subject, ckey, stype, ccontent, fnid=None, nid1=None, nid2=None, configid=None, __session__=None):
+    def saveTestConfig(self, cname, calias=None, status=None, subject=None, ckey=None, stype=None, ccontent=None,
+            fnid=None, nid1=None, nid2=None, configid=None, __session__=None):
         owner = __session__['name']
 
         if stype == '3' and ccontent.strip() != '':
             fileFolder = cprop.getVal('cconfig', 'fileFolder')
             with open(fileFolder + cname, 'wb') as f:
                 f.write(ccontent)
-        return self.dbapi.saveTestConfig(cname, subject, ckey, stype, ccontent, owner, fnid, nid1, nid2, configid)
+        return self.dbapi.saveTestConfig(cname, calias, status, subject, ckey, stype, ccontent, owner, fnid, nid1, nid2, configid)
 
     def deleteTestConfig(self, configid):
         return self.dbapi.deleteTestConfig(configid)
 
-class BugFreeApi:
-    def __init__(self):
-        sqlConfig = {'host':cprop.getVal("bugfree", "host"), 'port':cprop.getInt("bugfree", "port"),
-            'user':cprop.getVal("bugfree", "user"), 'passwd':cprop.getVal("bugfree", "passwd"),
-            'db':cprop.getVal("bugfree", "db"), 'charset':'utf8'}
-        self.sqlConn = SqlConnFactory(MysqldbConn, sqlConfig)
-        self.bfapi = cprop.getVal("bugfree", "bfapi")
+    # deploy
+    def _isRelativeDeploy(self, owner, deploy):
+        return (deploy['owner'] == owner or deploy['creator'] == owner)
 
-    def getBfUser(self, username):
-        sql = self.sqlConn.getSql("bf_test_user", Sql.select, True, 'username,realname,email')
-        sql.appendWhereByJson({'username':username})
-        return sql.execute()
+    def addDeploy(self, version, procode, branch, pendtime=None, owner=None, notifyer=None, remark=None,
+            fnid=None, nid1=None, nid2=None, phaseInit=False, deployid=None, __session__=None):
+        proname, protype, brancharg, deployarg = None, None, None, None
+        phase, status = (1 if phaseInit else 0, 0) if deployid is None else (None, None)
+        creator = __session__['name']
+        if deployid is not None:
+            deploy = self.dbapi.getCdeploy(isadmin=True, deployid=deployid)[0]
+            if not __session__['admin'] and not self._isRelativeDeploy(creator, deploy):
+                raise Exception("Not the creator or owner")
+        return self.dbapi.saveCdeploy(version, procode, proname, protype, branch, brancharg, pendtime,
+            creator, owner, notifyer, remark, fnid, nid1, nid2, phase, status, deployarg, deployid=deployid)
 
-    def _strmd5(self, s):
-        import md5  
-        m = md5.new()  
-        m.update(s)  
-        return m.hexdigest()
-        
-    def login(self, username, password):
-        return {'status':True, 'name':username}
+    def getDeploy(self, project=None, version=None, branch=None, phase=None,
+            fnid=None, nid1=None, nid2=None, deployid=None, __session__=None):
+        creator = __session__['name']
+        isadmin = __session__['admin']
+        return self.dbapi.getCdeploy(project, version, branch, phase, creator, isadmin, fnid, nid1, nid2, deployid)
 
-    def _bfLogin(self, username, password):
-        resp = toJsonObj(curl("http://%s/api3.php?mode=getsid" % self.bfapi))
-        sessionname = resp['sessionname']
-        sessionid = resp['sessionid']
-        rand = resp['rand']
-        
-        auth = self._strmd5(self._strmd5(username + self._strmd5(password)) + rand) 
-        
-        url = 'http://%s/api3.php?mode=login&&%s=%s&username=%s&auth=%s' % (self.bfapi, sessionname, sessionid, username, auth)
-        login = toJsonObj(curl(url))
+    def deleteDeploy(self, deployid, __session__=None):
+        creator = None if __session__['admin'] else  __session__['name'] 
+        if self.dbapi.deleteCdeploy(deployid, creator) == 0:
+            raise Exception("Not the creator, delete failed")
 
-        user = self.getBfUser(username)
-        return {'status':login['status'] == 'success', 'name':user[0]['realname'] if len(user) == 1 else 'NotExist'}
+    def getProject(self, condition=None):
+        pros = self.dbapi.getTestConfig("deploy", ckey="project", status=1)
+        return pros
 
-@cloudModule(handleUrl='/')
+    def getVersion(self, condition=None):
+        pros = self.dbapi.getTestConfig("plan", ckey="version", status=1)
+        return pros
+
+    def getBranch(self, project):
+        pass
+
+    def getDeployargs(self, project=None, phase=None):
+        pros = self.dbapi.getTestConfig("deploy", ckey="deployargs", status=1)
+        return pros
+    
+    def startDeploy(self, deployid, deployargs, __session__):
+        if Sql.isEmpty(deployid):raise Exception("Not found deployid")
+        deploy = self.dbapi.getCdeploy(isadmin=True, deployid=deployid)[0]
+        owner = __session__['name']
+        if self._isRelativeDeploy(owner, deploy):
+            if deploy['status'] == '1': return deploy['status']
+            self.dbapi.saveCdeploy(status=1, deployarg=deployargs, deploytimes=deploy['deploytimes'] + 1, isSetModifytime=True, deployid=deployid)
+            return "1"
+        else:
+            raise Exception("Not the creator or owner")
+
+    def getDeployStatus(self, deployid):
+        if Sql.isEmpty(deployid):raise Exception("Not found deployid")
+        deploy = self.dbapi.getCdeploy(isadmin=True, deployid=deployid)[0]
+        # checking deploy status
+        if deploy['status'] == '1':  self.dbapi.saveCdeploy(status=2, deployid=deployid)
+        return "2"
+
+    def changeDeployflow(self, deployid, nextInt, chowner=None, __session__=None):
+        owner = __session__['name']
+        deploy = self.dbapi.getCdeploy(deployid=deployid, creator=owner)
+        if len(deploy) == 1:
+            deploy = deploy[0]
+            if owner != deploy['owner']:
+                return 2, "Owner not match"
+            else: phase = int(deploy['phase']) + int(nextInt)
+            return self.dbapi.saveCdeploy(phase=phase, owner=chowner, deployid=deployid), "Changed"
+        else:
+            return 3, "Not authorized"
+
+@cloudModule(handleUrl='/', imports="CTestPlanAPi.dbapi")
 class AuthApi(LocalMemSessionHandler):
     def __init__(self):
-        self.bugfree = BugFreeApi()
+        self.dbapi = object()  # imported from CTestPlanAPi
         LocalMemSessionHandler.__init__(self)
-        self.redirectPath = '/clogin.html'
-        self.__ignoreMethods__('checkLogin')
-        self.__ignorePaths__('/clogin.html', '/cservice/AuthApi/checkLogin', '/cservice/CServiceTool/RegistServer')
 
-    def checkLogin(self, name, password, loginfrom="", __session__=None):
-        
-        bglogin = self.bugfree.login(name, password)
-        if bglogin['status']:
-            __session__['name'] = bglogin['name']
+    def __setup__(self):
+        self.redirectPath = '/clogin.html'
+        self.__ignoreMethods__('checkLogin', 'registerOwner')
+        self.__ignorePaths__('/clogin.html', '/cservice/CServiceTool/RegistServer', '/cservice/CTestPlanAPi/exportCtestcase')
+
+    def getOwners(self):
+        pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="cname,calias")
+        return pros
+
+    def registerOwner(self, cname, calias, email=None, passwd=None):
+        owners = self.dbapi.getTestConfig(subject="plan", ckey="owner", cname=cname)
+        if len(owners) > 0:
+            raise Exception("Already exist")
+        status, subject, ckey, stype, ccontent, owner = 1, "plan", "owner", 1, {"email":email}, "register"
+        fnid, nid1, nid2 = 66, 8, None
+        self.dbapi.saveTestConfig(cname, calias, status, subject, ckey, stype, ccontent, owner, fnid, nid1, nid2)
+        raise RedirectException("/clogin.html?register=success")
+
+    def checkLogin(self, name, passwd, loginfrom="", __session__=None):
+        owners = self.dbapi.getTestConfig(subject="plan", ckey="owner", cname=name)
+        owner = owners[0] if len(owners) >= 1 else None
+        if owner is not None and (owner['cname'] == name or owner['calias'] == name) and owner['status'] == 1 :
+            __session__['name'] = owner['calias']
+            __session__['admin'] = "xinxiu".__contains__(owner['cname'])
             __session__['authorized'] = True
             url = loginfrom[6:]
             if not url.__contains__(".html") and not url.__contains__("?"):
@@ -749,4 +434,4 @@ class AuthApi(LocalMemSessionHandler):
 if __name__ == "__main__":
     from cserver import servering
     cprop.load("cplan.ini")
-    servering("-p 8089 -f webs  -m cplan.html  -t ctoolApi.py")
+    servering("-p 8089 -f webs  -m cplan.html  -t testoolplatform.py")

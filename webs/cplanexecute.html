@@ -2,15 +2,17 @@
 <html>
 <head>
 	<meta charset="UTF-8">
-	<title>工具管理 用例</title>
+	<title>测试执行-日报&用例</title>
 	<link href="js/css/bootstrap.min.css" rel="stylesheet">
 	<link href="js/css/style.css" rel="stylesheet">
 	<link rel="stylesheet" type="text/css" href="js/themes/default/easyui.css">
 	<link rel="stylesheet" type="text/css" href="js/themes/icon.css">
 	<script type="text/javascript" src="js/jquery.min.js"></script>
 	<script type="text/javascript" src="js/jquery.easyui.min.js"></script>
-	<script src="CTestClient.js"></script>
+		
+	<script src="cservice.js"></script>
 	<script src="/cservice/js"></script>
+
 	<style type="text/css">
 <!--
 /************ Table ************/
@@ -46,7 +48,7 @@ width:300px;
 			<ul class="nav navbar-nav">
 				<li><a href="/cplan.html">测试计划</a> </li>
 				<li><a href="/cplancase.html">测试用例</a></li>
-				<li><a href="/cplanenv.html">测试环境</a></li>
+				<li><a href="/cdeploy.html">提测&amp;发布</a></li>
 				<li><a href="/ctools.html">测试工具</a></li>
 				<li><a href="cconfig.html">配置管理</a></li>
 				<li class='active'><a href="#">测试执行</a></li>
@@ -74,9 +76,9 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		<table>
 			<tr><td>目的&nbsp;&nbsp;&nbsp;&nbsp;</td><td id='planTarget'></td>
 				<td align='right'>
-					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.addCases()">添加用例</a>
-					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.showDailyReport()">发送日报</a>
-					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.showPlanReport()">生成测试报告</a>
+					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.addCases()">添加用例</a>
+					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.showDailyReport()">发送日报</a>
+					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.showPlanReport()">生成测试报告</a>
 				</td>
 			</tr>
 			<tr><td>详情</td><td id='planDetail' colspan=2></td></tr>
@@ -86,34 +88,34 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 
 		<div id='dailyPannel' class="easyui-tabs" style="width:100%;">
 			<div title="测试日报">
-				<table id='plandailylist' style='height:500px' data-options='singleSelect:false,rownumbers:true,pagination:true,pageSize:20'></table>
+				<table id='plandailylist' data-options='singleSelect:false,rownumbers:true,pagination:true,pageSize:20'></table>
 			</div>
 			<div title="测试用例">
 				<div>
-					<input id='condTagsName' size=15 class=easyui-textbox data-options="prompt:'测试场景'"/> 
-					<input id='condCaseName' size=25 class=easyui-textbox data-options="prompt:'用例名'"/> 
-					<input id='condOwner' size=15 class=easyui-textbox data-options="prompt:'修改人'"/> 
-					<select id='condResult' onchange="treeTool.loadCases(1)">
-						<option value="">测试结果</option> <option value="0">不涉及</option> <option value="1">通过</option> <option value="2">失败</option> <option value=5>阻塞</option> 
+					<input id='condScenariotags' size=10 class=easyui-textbox data-options="prompt:'测试场景'"/> 
+					<input id='condcasename' size=30 class=easyui-textbox data-options="prompt:'测试用例'"/> 
+					<input id='condOwner' size=10 class=easyui-textbox data-options="prompt:'修改人'"/> 
+					<select id='condResult' onchange="planTool.loadCases(1)">
+						<option value="">测试结果</option> <option value="0">未执行</option> <option value="1">通过</option> <option value="2">失败</option> <option value=5>阻塞</option> 
 					</select>&nbsp;&nbsp;
-					<input type='button' value='同步用例' title='同步用例更改到本计划中执行的用例中' onClick='treeTool.syncPlancases()'/>
+					<input type='button' value='同步用例' title='同步用例更改到本计划中执行的用例中' onClick='planTool.syncPlancases()'/>
+					<input type='button' value='重置测试结果' title='将测试用例重置为：未执行' onClick='planTool.resetPlancaseresult()'/>
 				</div>
-				<table id='plancaselist' style='height:500px' data-options='singleSelect:false,rownumbers:true,pagination:true,pageSize:20'></table>
+				<table id='plancaselist' data-options='singleSelect:false,rownumbers:true,pagination:true,pageSize:20'></table>
 			</div>
 		</div>
 	</div>
 
-	<div id='caseAddDialog' class="easyui-dialog" title="添加测试用例" style="width:1000px;height:90%;align:top"
+	<div id='caseAddDialog' class="easyui-dialog" title="测试用例" style="width:1000px;height:90%;align:top"
 	    data-options="rownumbers:true,singleSelect:true, iconCls:'icon-save',resizable:true,modal:true,closable:true,closed:true">
 	    <br>
-		<table width='100%'><tr><td valign="top" style="width:200px">
+		<table width='100%'><tr><td valign="top" style="width:150px">
 	    	<ul class="easyui-tree" id="folder-list" data-options="animate:true,checkbox:false"></ul>
-	    </td><td valign='top'>
-	    	<input id="caseselects" size=80 class="easyui-combobox" data-options="multiple:true,panelHeight:'500px'" />
-		</td><td valign='top' align='right'>
-			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.saveCaseNode()">返回计划</a>
-			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.saveCaseNode()">保存用例</a>
-			&nbsp;&nbsp;&nbsp;&nbsp;
+	    </td><td valign='top' align='right'>
+			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveCaseNode()">返回计划</a>
+			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveCaseNode()">添加用例</a>
+			<br>
+			<table id='casedatalist' data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>		
 		</td></tr></table>
 	</div>
 	
@@ -123,7 +125,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 	    <table width='100%'><tr>
 			<td valign="top"> 进度:</td><td valign="top">
 
-			<input id="dailyDay" size=8 value="2012-10-12" onChange='treeTool.showDailyReport(this.value)'/>
+			<input id="dailyDay" size=8 value="2012-10-12" onChange='planTool.showDailyReport(this.value)'/>
 			<select id='planStatus'>
 			<option value='2'>已创建</option>
 			<option value='0'>有风险</option>
@@ -131,7 +133,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 			<option value='3'>已经完成</option>
 			<option value='4'>暂停</option></select>
 		</select>
-		总进度<input id="dailyProgress" size=1/>%，用例完成<label id='caseprogressshow'>30</label>%
+		总进度<input id="dailyProgress" size=1/>%，用例完成<label id='caseprogressshow'>30</label>
 		<br> <input id="dailyCostTime" size=1 value='8'/>小时&nbsp;&nbsp;
 		<input id="dailyCostMan" size=1 value='1'/>人，
 		从<input id='starttime' class="easyui-datebox"
@@ -141,9 +143,9 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		</td>
 		
 		<td align='right'>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.saveDaily(0)">保存草稿</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.saveDaily(1)">发送日报</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.saveDaily(0);treeTool.showPlanReport()">生成测试报告</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveDaily(0)">保存草稿</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveDaily(1)">发送日报</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveDaily(0);planTool.showPlanReport()">生成测试报告</a>
 		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br><br>
 		</td></tr>
 		<tr><td valign="top">当前进展:</td><td colspan=2><textarea id='dailySummary' rows=8 cols=120></textarea></td></tr>
@@ -151,7 +153,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		</table> 
 	</div>
 	
-	<div id='dailyEmail' class="easyui-dialog" title="发送日报" style="width:1000px;height:450px;align:top"
+	<div id='dailyEmail' class="easyui-dialog" title="发送日报" style="width:1000px;height:90%;align:top"
 	    data-options="rownumbers:true,singleSelect:true, iconCls:'icon-save',resizable:true,modal:true,closable:true,closed:true">
 		<br>
 	    <table><tr>
@@ -160,8 +162,8 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 				<input id='mailto' size=45/>&nbsp;cc
 				<input id='mailcc' size=30/>
 				&nbsp;&nbsp;
-				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#dailyEmail').dialog('close');treeTool.showDailyReport()">返回日报</a>
-				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.sendDailyEmail()">确定发送</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#dailyEmail').dialog('close');planTool.showDailyReport()">返回日报</a>
+				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.sendDailyEmail()">确定发送</a>
 			</td></tr>
 			<tr> <td><br> </td></td></tr>
 			<tr> <td>主题: </td><td id='dailySubject'></td></tr>
@@ -182,7 +184,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		&nbsp;&nbsp;&nbsp;&nbsp;
 		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#planReport').dialog('close');$('#dailyPannel').tabs('select','测试计划')">返回计划</a>
 		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#planReport').dialog('close');$('#dailyPannel').tabs('select','测试用例')">返回用例</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.sendPlanSummaryReport()">确定发送</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.sendPlanSummaryReport()">确定发送</a>
 	</td></tr>
 
 	<tr><td width=70 style='white-space:nowrap'>测试目的</td> <td id='planReportTarget'></td> </tr>
@@ -194,14 +196,14 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 </table>
 	</div>
 
-	<div id='caseremarkView' class="easyui-dialog" title="测试用例备注、修改" style="width:1100px;height:350px;align:top"
+	<div id='caseremarkView' class="easyui-dialog" title="测试用例备注、修改" style="width:1000px;align:top"
 	    data-options="rownumbers:true,singleSelect:true, iconCls:'icon-save',resizable:true,modal:true,closable:true,closed:true">
 		<br>
 <table width="100%">
 	<tr><td>测试场景</td> <td> <input id="plancasescenario" size="40"><input id="plancaseidremark" type='hidden'>
 		<input id="caseidremark" type='hidden'>
 		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="treeTool.savePlancaseRemark()">保存用例备注</a>
+		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.savePlancaseRemark()">修改并关闭</a>
 	</td> </tr>
 	<tr><td>测试要点</td> <td><br><textarea id='plancasename' rows=2 cols=120></textarea></td> </tr>
 	<tr><td>用例备注</td> <td > <textarea id='plancaseremark' rows=4 cols=120></textarea> </td> </tr>
@@ -225,7 +227,7 @@ Array.prototype.foreach = function(f, arg){
 	}
 }
 
-treeTool = {
+planTool = {
     caseRootId: 2,
 	getTreeNodeData: function(fnid){
 		var nodesData = CTestPlanAPi.getCtreeRoot(fnid)
@@ -241,29 +243,32 @@ treeTool = {
 		$("#dailyPannel").tabs("select","测试用例")
 		$('#folder-list').tree({
 			animate: true,
-			data: treeTool.getTreeNodeData(treeTool.caseRootId),
+			data: planTool.getTreeNodeData(planTool.caseRootId),
 			onClick:function(node){
-				treeTool.tree = node
+				planTool.tree = node
 				if(node.state=="open")
 					$(this).tree('collapse',node.target)
 				else
 					$(this).tree('expand',node.target)
 
-				var datas = CTestPlanAPi.getCtestcase(node.nid)
+				var datas = CTestPlanAPi.getPlancases(node.nid, condition.planid)
 				for(var i in datas){
 					var d = datas[i]
 					d['casename'] = "【"+d['scenario']+"】  "+d['name']
 					d['caseinfo'] = "" + d['caseid'] + "|,|"+ (d['scenario']?d['scenario']:"")+
 						"|,|"+ (d['remark']?d['remark']:"") + "|,|"+ d['owner']+ "|,|"+ d['name']
 				}
-				$('#caseselects').combobox({valueField: 'caseinfo',
-					textField: 'casename', 'data': datas})
+				
+				$('#casedatalist').datagrid({singleSelect:false,columns:[[
+				    {field:'caseinfo',checkbox:true},
+					{field:'scenario',title:'测试场景',width:100},
+					{field:'name',title:'用例描述'}]], data: datas})
 			},
 			onBeforeExpand: function(node){
 				if(node.children==undefined)
 					$(this).tree('append',{
 						parent:node.target,
-						data:treeTool.getTreeNodeData(node.nid)
+						data:planTool.getTreeNodeData(node.nid)
 					});
 			}
 		})
@@ -274,40 +279,38 @@ treeTool = {
 
 	loadPlanAndcases: function(){
 		var planData = CTestPlanAPi.getCtestplanById(condition.planid)[0]
-		treeTool.planData = planData
-		planTarget.innerHTML  = "<strong>【"+planData.ptype+"】"+"【"+planData.priority+"】"+planData.name+ " ("+planData.tags+")</strong>"
+		planTool.planData = planData
+		planTarget.innerHTML  = planData.reportTarget
 		planDetail.innerHTML  = "<pre>【描述】"+planData.summary+"<br>【风险】"+planData.issues+"</pre>"
-		var planTime = treeTool.formatTime(planData.pstarttime, planData.pendtime)
-		var actTime = treeTool.formatTime(planData.starttime, planData.endtime)
+		var planTime = planTool.formatTime(planData.pstarttime, planData.pendtime)
+		var actTime = planTool.formatTime(planData.starttime, planData.endtime)
 		planSammary.innerHTML =  planData.reportSummary
-		treeTool.loadCases()
+		planTool.loadCases()
 	},
 	loadCases: function(isCondSearch){
-		if(isCondSearch){
-			var status=$("#condResult").val()
-			var owner=$("#condOwner").val()
-			var tagsName=$("#condTagsName").val()
-			var caseName=$("#condCaseName").val()
-		}else{
-			var status=undefined
-			var owner=undefined
-			var caseName=undefined
-		}
-		var respVal = CTestPlanAPi.getPlancase(condition.planid,status,owner,tagsName,caseName)
+		var status=$("#condResult").val()
+		var owner=$("#condOwner").val()
+		var scenarioName=$("#condScenariotags").val()
+		var caseName=$("#condcasename").val()
+
+		var respVal = CTestPlanAPi.getPlancase(condition.planid,status,owner,scenarioName,caseName)
 		var respColumns =[
-			{field:'caseid',title:'用例ID', formatter:function(value, row, index){
-				return '<select onChange=\'treeTool.changeTestResult(' +row.plancaseid +', this.value)\'> <option>ID '+value+'</option> <option value=0>不涉及</option> <option value=1>通过</option> <option value=2>失败</option> <option value=5>阻塞</option> <option value=3>备注</option> <option value=4>删除</option> </select>'
-			}},
+		    {field:'tags',title:'目录'},{field:'scenario',title:'测试场景'},
+			{field:'name',title:'用例描述',width:"40%"},
 			{field:'status',title:'结果',
 				formatter:function(value, row, index){
-					return ['不涉及', '通过', '失败', '','','阻塞'][value] }},
-			{field:'tags',title:'父类',width:120},
-			{field:'scenario',title:'测试场景',width:150},
-			{field:'name',title:'用例描述',width:"45%"},
-
-			{field:'owner',title:'修改人',width:80},
-			{field:'modifytime',title:'修改时间',width:120},
-			{field:'remark',title:'备注',width:300}
+					return ['未执行', '通过', '失败', '','','阻塞'][value] },
+				styler:function cellStyler(value,row,index){
+				return ['',
+					'background-color:#9AFF9A;', 'background-color:#ffee00;color:red;',
+					'background-color:#FFFFFF', 'background-color:#F08080;'][value];
+			}},
+			{field:'caseid',title:'操作', formatter:function(value, row, index){
+				return '<select onChange=\'planTool.changeTestResult(' +row.plancaseid +', this.value)\'> <option>设置结果</option> <option value=3>备注</option> <option value=1>通过</option> <option value=2>失败</option> <option value=0>未执行</option> <option value=5>阻塞</option> <option value=4>删除</option> </select>'
+			}},
+			{field:'owner',title:'修改人'},
+			{field:'modifytime',title:'修改时间'},
+			{field:'remark',title:'备注'}
 		]
 
 		$('#plancaselist').datagrid({ columns:[respColumns], data: respVal, loadFilter: function(data){
@@ -348,11 +351,11 @@ treeTool = {
 
 		CTestPlanAPi.savePlandaily(condition.planid, day, status, progress, caseprogress, 
 			costtime, costman, starttime, endtime, summary, issues)
-		treeTool.loadDailyList()
-		treeTool.loadPlanAndcases()
+		planTool.loadDailyList()
+		planTool.loadPlanAndcases()
 		if(isSendMail){
 			$('#dailyAddDialog').dialog('close')
-			treeTool.showDailyEmail(day)
+			planTool.showDailyEmail(day)
 		}
 	},
 	contentFormatter:function(value, row, index){
@@ -372,8 +375,8 @@ treeTool = {
 			{field:'status',title:'状态',width:50, 
 				formatter:function(value, row, index){
 					return ['有风险','进行中','已创建', '已经完成','暂停'][value] }},
-			{field:'summary',title:'进展详情', resizable:true, formatter:treeTool.contentFormatter},
-			{field:'issues',title:'问题或风险', width:'50%',  formatter:treeTool.contentFormatter}]
+			{field:'summary',title:'进展详情', width:'40%', formatter:planTool.contentFormatter},
+			{field:'issues',title:'问题或风险', width:'40%',  formatter:planTool.contentFormatter}]
 
 		$('#plandailylist').datagrid({ columns:[respColumns], data: respVal, loadFilter: function(data){
 			if (typeof data.length == 'number' && typeof data.splice == 'function'){
@@ -412,37 +415,50 @@ treeTool = {
 		}else if(result!=''){
 			CTestPlanAPi.setPlancase(plancaseid, result)
 		}
-		treeTool.loadPlanAndcases()
+		planTool.loadPlanAndcases()
 	},
 	saveCaseNode: function(){
-		var selectVals = $('#caseselects').combobox("getValues")
-		CTestPlanAPi.savePlancase(condition.planid, treeTool.tree.name, selectVals)
+		var selectVals = $('#casedatalist').datagrid("getSelections");
+		var cases = [];
+		selectVals.foreach(function(i,e){console.debug(cases.insert(0, e.caseinfo))})
+		selectVals.foreach(function(i,e){console.debug(e)});
+		CTestPlanAPi.savePlancase(condition.planid, planTool.tree.name, cases);
+		$('#casedatalist').datagrid({data:[]})
 		$('#caseAddDialog').dialog('close')
-		treeTool.loadPlanAndcases()
+		planTool.loadPlanAndcases()
 	},
 	savePlancaseRemark: function(){
 		CTestPlanAPi.savePlancaseRemark($("#plancaseidremark").val(),$("#caseidremark").val(), $("#plancasescenario").val(), $("#plancasename").val(), $("#plancaseremark").val())
 		$('#caseremarkView').dialog('close')
-		treeTool.loadPlanAndcases()
+		planTool.loadPlanAndcases()
 	},
 	syncPlancases: function(){
 		$.messager.progress({text:'同步中 ...',interval:10})
 		setTimeout(function(){
 			CTestPlanAPi.syncPlancase(condition.planid)
 			$.messager.progress("close")
+			planTool.loadPlanAndcases()
 		},10)
 	},
+	resetPlancaseresult: function(){
+		$.messager.confirm('测试执行', '确定重置用例为：未执行', function(r){
+			if (r){
+				CTestPlanAPi.resetPlancaseresult(condition.planid)
+				planTool.loadPlanAndcases()
+			}
+		});
+	},
 	showPlanReport: function(){
-		var planData = treeTool.planData
-		planReportTarget.innerHTML = "<strong>【"+planData.ptype+"】"+"【"+planData.priority+"】"+planData.name+ " ("+planData.tags+")</strong>"
+		var planData = planTool.planData
+		planReportTarget.innerHTML = planData.reportTarget
 		planReportDetail.innerHTML  = planData.reportSummary
 		planReportCaseSummary.innerHTML = CTestPlanAPi.getCtestplancasereport(planData.planid)
 
-		if(!treeTool.planData.mailfrom)
-			treeTool.planData.mailfrom = treeTool.planData.owner
-		$("#reportmailfrom").val(treeTool.planData.mailfrom)
-		$("#reportmailto").val(treeTool.planData.mailto)
-		$("#reportmailcc").val(treeTool.planData.mailcc)
+		if(!planTool.planData.mailfrom)
+			planTool.planData.mailfrom = planTool.planData.owner
+		$("#reportmailfrom").val(planTool.planData.mailfrom)
+		$("#reportmailto").val(planTool.planData.mailto)
+		$("#reportmailcc").val(planTool.planData.mailcc)
 		$('#planReport').dialog('open')
 		var psummary = CTestPlanAPi.getPlanSummary(planData.planid)
 		if(psummary){
@@ -451,7 +467,7 @@ treeTool = {
 		}
 	},
 	sendPlanSummaryReport: function(){
-		var emailRes = CTestPlanAPi.sendPlanSummaryEmail(treeTool.planData.planid,$("#planreportSummary").val(),$("#planreportIssues").val(),
+		var emailRes = CTestPlanAPi.sendPlanSummaryEmail(planTool.planData.planid,$("#planreportSummary").val(),$("#planreportIssues").val(),
 			$("#reportmailfrom").val(), $("#reportmailto").val(), $("#reportmailcc").val(), reportisSetFinish.checked)
 		$.messager.show({title:'测试计划', msg:'发送结果: '+emailRes, timeout:2000,
 				style:{ right:'', top:100, bottom:'' }})
@@ -461,12 +477,12 @@ treeTool = {
 		$('#dailyAddDialog').dialog('open')
 		$("#dailyPannel").tabs("select","测试日报")
 		
-		$("#planStatus").val(treeTool.planData.status)
-		$("#dailyProgress").val(treeTool.planData.progress)
+		$("#planStatus").val(planTool.planData.status)
+		$("#dailyProgress").val(planTool.planData.progress)
 		
-		$("#starttime").datebox("setValue", treeTool.planData.starttime)
-		$("#endtime").datebox("setValue", treeTool.planData.endtime)
-		caseprogressshow.innerHTML = CTestPlanAPi.countPlancase(treeTool.planData.planid, 1).percent
+		$("#starttime").datebox("setValue", planTool.planData.starttime)
+		$("#endtime").datebox("setValue", planTool.planData.endtime)
+		caseprogressshow.innerHTML = CTestPlanAPi.calcPlancaseprogress(planTool.planData.planid)
 
 		if(!today) today = CTestPlanAPi.getDay()
 		var daily = CTestPlanAPi.getPlandaily(condition.planid, today)
@@ -484,14 +500,14 @@ treeTool = {
 		}
 	},
 	showDailyEmail: function(day){
-		treeTool.emailDay = day
+		planTool.emailDay = day
 		$('#dailyEmail').dialog('open')
-		if(!treeTool.planData.mailfrom)
-			treeTool.planData.mailfrom = treeTool.planData.owner
-		$("#mailfrom").val(treeTool.planData.mailfrom)
-		$("#mailto").val(treeTool.planData.mailto)
-		$("#mailcc").val(treeTool.planData.mailcc)
-		var dailyEmail = CTestPlanAPi.getPlandailyEmail(condition.planid, treeTool.emailDay)
+		if(!planTool.planData.mailfrom)
+			planTool.planData.mailfrom = planTool.planData.owner
+		$("#mailfrom").val(planTool.planData.mailfrom)
+		$("#mailto").val(planTool.planData.mailto)
+		$("#mailcc").val(planTool.planData.mailcc)
+		var dailyEmail = CTestPlanAPi.getPlandailyEmail(condition.planid, planTool.emailDay)
 		dailySubject.innerHTML = dailyEmail[0]
 		dailyBody.innerHTML = dailyEmail[1]
 	},
@@ -499,23 +515,23 @@ treeTool = {
 		var sender = $("#mailfrom").val()
 		var receiver = $("#mailto").val()
 		var ccReceiver = $("#mailcc").val()
-		var emailRes = CTestPlanAPi.sendPlandailyEmail(condition.planid, treeTool.emailDay, sender, receiver, ccReceiver)
+		var emailRes = CTestPlanAPi.sendPlandailyEmail(condition.planid, planTool.emailDay, sender, receiver, ccReceiver)
 		$.messager.show({title:'测试计划', msg:'发送结果: '+emailRes, timeout:2000,
 			style:{ right:'', top:100, bottom:'' }})
-		treeTool.loadPlanAndcases()
-		treeTool.loadDailyList()
+		planTool.loadPlanAndcases()
+		planTool.loadDailyList()
 	}
 }
 
 condition = DataOperation.GetCondition()
 
-treeTool.loadPlanAndcases()
-treeTool.loadDailyList()
+planTool.loadPlanAndcases()
+planTool.loadDailyList()
 
 $(".easyui-textbox").textbox({ onChange: function(nv, ov){
-	treeTool.loadCases(1)
+	planTool.loadCases(1)
 }})
-//setTimeout(treeTool.showPlanReport,1)
+//setTimeout(planTool.showPlanReport,1)
 </script>
 
 </html>

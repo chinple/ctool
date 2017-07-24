@@ -12,7 +12,7 @@ import os
 class TestExecuting(TestCaseBase):
     @scenario(param={},
         where={})
-    def testReport(self):
+    def testSummaryReport(self):
         cp = CTestPlanAPi()
         planid = 5
         summary = '''api 发布完成，验证通过
@@ -36,8 +36,19 @@ class TestExecuting(TestCaseBase):
 2. 测试对各业务模块未有较全的业务文档和用例，版本后需要增加相关文档'''
         cp.sendPlanSummaryEmail(planid, summary, issues, sender="xinxiu", receiver="xinxiu@wacai.com", ccReceiver="", isSetFinish=True)
 
+    @scenario(param={},
+        where={})
+    def testDailyReport(self):
+        cp = CTestPlanAPi()
+        planid = 5
+        cp.sendPlandailyEmail(planid, day="2017-06-27", sender="xinxiu", receiver="xinxiu@wacai.com", ccReceiver="")
+    @scenario(param={},
+        where={})
+    def testGroupReport(self):
+        cp = CTestPlanAPi()
+        open("testplans.html", "wb").write(cp.getPlanReport(ptype="", inStatus=None, outStatus=3, fnid=6, nid1=6))
 if __name__ == "__main__":
     from mtest import testing
     os.chdir("..")
     cprop.load("cplan.ini")
-    testing("-r run  ")
+    testing("-r run  -i testDailyReport")

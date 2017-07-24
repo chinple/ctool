@@ -10,7 +10,8 @@
 <link rel="stylesheet" type="text/css" href="js/themes/icon.css">
 <script type="text/javascript" src="js/jquery.min.js"></script>
 <script type="text/javascript" src="js/jquery.easyui.min.js"></script>
-<script src="CTestClient.js"></script>
+
+<script src="cservice.js"></script>
 <script src="/cservice/js"></script>
 <script src="cplantree.js"></script>
 </head>
@@ -21,7 +22,7 @@
 			<ul class="nav navbar-nav">
 				<li style= "background:#e8e8e8"><a href="/cplan.html">测试计划</a> </li>
 				<li><a href="/cplancase.html">测试用例</a></li>
-				<li><a href="/cplanenv.html">测试环境</a></li>
+				<li><a href="/cdeploy.html">提测&发布</a></li>
 				<li><a href="/ctools.html">测试工具</a></li>
 				<li><a href="cconfig.html">配置管理</a></li>
 			</ul>
@@ -66,7 +67,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 
 	<div id="treeAdd" class="easyui-dialog" title="目录"
 		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
-		style="width: 600px; height: 80px; padding: 10px;">
+		style="width: 550px;padding: 10px;">
 		<input id='treeName' size=50 />&nbsp;&nbsp; <input type='checkbox'
 			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="#"
 			onclick="treeTool.saveTreeNode()" class="easyui-linkbutton">保存目录</a>
@@ -75,59 +76,58 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 <!-- tree data -->
 	<div id="treedataadd" class="easyui-dialog" title="测试计划"
 		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
-		style="width: 1000px; height: 500px; padding: 10px;">
-		目的: &nbsp;&nbsp;&nbsp;&nbsp;<input id='planName' size=80>&nbsp;&nbsp;
-		类别：<select id='ptype'> <option value='版本测试'>版本测试</option> <option value='自动化测试'>自动化测试</option> <option value='专项测试'>专项测试</option> <option value='日常计划'>日常计划</option>
+		style="padding: 10px;">
+		目的: &nbsp;&nbsp;&nbsp;&nbsp;<input id='planName' size=84>&nbsp;&nbsp;
+		<select id='ptype'> <option value='版本测试'>版本测试</option> <option value='自动化测试'>自动化测试</option> <option value='专项测试'>专项测试</option> <option value='日常计划'>日常计划</option>
 			   </select>&nbsp;&nbsp; 
-		优先级：<select
-			id='planPriority'><option value='P0'>P0</option>
-			<option value='P1'>P1</option>
-			<option value='P2'>P2</option></select>&nbsp;&nbsp; 
-		<br><br>
-		项目: &nbsp;&nbsp;&nbsp;&nbsp;<input id='planTags' size=50 />&nbsp;&nbsp;
-		参与人: &nbsp;&nbsp;<input id='planOwner' size=50 />
-		<br><br>
-		状态: &nbsp;&nbsp;&nbsp;&nbsp;
-		<select id='planStatus'>
+			   <select id='planStatus'>
 			<option value='2'>已创建</option>
 			<option value='0'>有风险</option>
 			<option value='1'>进行中</option>
 			<option value='3'>已经完成</option>
 			<option value='4'>暂停</option>
-		</select>,&nbsp;&nbsp; 
-		计划开始时间:<input
+		</select>
+		<br>
+		版本: &nbsp;&nbsp;&nbsp;&nbsp;
+		<input id='planVersion' size=10 />&nbsp;&nbsp;
+		项目<input id='planTags' size=40 />&nbsp;&nbsp;
+		参与人<input id='planOwner' size=50 />
+		<br><br>
+		计划: &nbsp;&nbsp;&nbsp;&nbsp;
+		<select
+			id='planPriority'><option value='P0'>P0</option>
+			<option value='P1'>P1</option>
+			<option value='P2'>P2</option></select>
+		&nbsp;&nbsp; 
+		计划开始时间<input
 			id='pstarttime' class="easyui-datebox"
 			data-options="formatter:myformatter,parser:myparser"
 			style="width: 100px" /> 
-		~结束时间:<input id='pendtime'
-			class="easyui-datebox"
-			data-options="formatter:myformatter,parser:myparser"
-			style="width: 100px" />
+		~结束时间<input id='pendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
 		&nbsp;&nbsp; 
-		实际开始时间:<input id='starttime'
+		实际开始时间<input id='starttime'
 			class="easyui-datebox"
 			data-options="formatter:myformatter,parser:myparser"
-			style="width: 100px" /> ~结束时间: <input id='endtime'
+			style="width: 100px" /> ~结束时间<input id='endtime'
 			class="easyui-datebox"
 			data-options="formatter:myformatter,parser:myparser"
-			style="width: 100px" /> <br> <br> 
+			style="width: 100px" /> <br>
 		详情: &nbsp;&nbsp;&nbsp;&nbsp;<textarea id='planSummary' rows=6 cols=120></textarea><br>
 		风险: &nbsp;&nbsp;&nbsp;&nbsp;<textarea id='planIssues' rows=6 cols=120></textarea><br><br>
 		<a href="#"
-			onclick="treeDataTool.saveTreeData(1)" class="easyui-linkbutton"> 保存</a>&nbsp;&nbsp;&nbsp;
+			onclick="treeDataTool.saveTreeData(1)" class="easyui-linkbutton">保存并关闭</a>&nbsp;&nbsp;&nbsp;
 		<a href="#" onclick="treeDataTool.saveTreeData(0)"
-			class="easyui-linkbutton">保存并继续添加</a>
+			class="easyui-linkbutton">保存并添加</a>
 	</div>
 	
 	<div data-options="region:'center'">
 		<div class="easyui-panel" data-options="multiple:true"
 			style="background: #f5f5f5; width: 100%">
 			<div id="planCondition">
-				<input id='condPlanName' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/>
-				<select id='condptype' onchange='treeDataTool.loadTreeDataList()'> <option value=''>所有测试</option> <option value='版本测试'>版本测试</option> <option value='自动化测试'>自动化测试</option> <option value='专项测试'>专项测试</option> <option value='日常计划'>日常计划</option></select>&nbsp;&nbsp; 
-				<select id='condplanPriority'  onchange='treeDataTool.loadTreeDataList()'> <option value=''>所有</option> <option value='P0'>P0</option> <option value='P1'>P1</option> <option value='P2'>P2</option></select>&nbsp;&nbsp; 
-				<select id='condplanStatus'  onchange='treeDataTool.loadTreeDataList()'> <option value='9'>非已完成</option> <option value=''>所有状态</option> <option value='2'>已创建</option> <option value='0'>有风险</option> <option value='1'>进行中</option> <option value='3'>已经完成</option> <option value='4'>暂停</option>
-				</select>
+				<input id='condPlanName' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="计划名、参与人..."/>
+				<input id='condptype'/>
+				<input id='condplanPriority'/>
+				<input id='condplanStatus'/>
 			</div>
 		</div>
 
@@ -139,7 +139,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 	
 	<div id="planGroups" class="easyui-dialog" title="计划组"
 		data-options="iconCls:'icon-save',closable:true,closed:true"
-		style="width: 1550px; height: 800px; padding: 10px;">
+		style="width: 1000px; height: 500px; padding: 10px;">
 			<select id='condgptype' onchange='treeDataTool.loadPlanReport()'>
 				<option value=''>所有测试</option>
 				<option value='版本测试,自动化测试'>版本测试及其自动化</option>
@@ -158,7 +158,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 				<option value='4'>暂停</option>
 			</select>
 			
-			<input id='condpgName' size=30 value='信用'
+			<input id='condpgName' size=30 value='all'
 				onkeypress="if(event.keyCode==13) treeDataTool.loadPlanReport()"/>
 		<br><br>
 		<div id='planGroupsContent' width='100%'></div>
@@ -169,7 +169,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 <script type="text/javascript">
 treeTool.treeRootId = 1
 var riskStatusDefine = ['有风险','进行中','已创建', '已经完成','暂停']
-var array2List = function(a,iname,vname){
+var array2List = function(a, iname, vname){
 	var al = [];
 	for(var i=0;i<a.length;i++){
 		var e = {}; e[iname]=i; e[vname]=a[i]; 
@@ -177,6 +177,7 @@ var array2List = function(a,iname,vname){
 	}
 	return al;
 }
+
 treeDataTool = {
 	// tree datas 
 	loadTreeDataList : function(nid1,nid2) {
@@ -187,9 +188,9 @@ treeDataTool = {
 			nid2 = treeSelected.nid
 
 		var nameOrTags = $('#condPlanName').val()
-		var ptype    = $('#condptype').val()
-		var priority = $('#condplanPriority').val()
-		var inStatus = $('#condplanStatus').val()
+		var ptype    = $('#condptype').combobox("getValue")
+		var priority = $('#condplanPriority').combobox("getValue")
+		var inStatus = $('#condplanStatus').combobox("getValue")
 		var outStatus = undefined
 		if(inStatus==9){
 			inStatus=undefined
@@ -200,7 +201,7 @@ treeDataTool = {
 		var dataCols = [
 			{ field : 'name',title : '项目-版本计划',width: 280, formatter : function(value, row, index) {
 				var tags = row.tags?("【"+row.tags+"】"):"";
-				return tags+'<a href="cplanexecute.html?planid=' + row.planid + '">'+value+'</a>' 	}
+				return tags+'<a href="cplanexecute.html?planid=' + row.planid + '">'+value+(row.version?("v"+row.version):"")+'</a>' 	}
 			},
 			{ field : 'ptype',title : '类别',width: 60 }, 
 			{ field : 'owner',title : '参与人', editor:'text'}, 
@@ -228,10 +229,13 @@ treeDataTool = {
 					return (row.starttime?row.starttime.split(' ')[0]:"") +"~<strong>"+ (row.endtime?row.endtime.split(' ')[0]:"")+"</strong>"  } 
 			},
 			{ field : 'planid',title : '操作',formatter : function(value, row, index) {
-				return '<select onChange=\'treeDataTool.operateTreeData(' + value +', this.value)\'> <option>操作</option> <option value=1>修改</option> <option value=2>删除</option> </select>'
+				return [
+					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
+					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
+				].join("&nbsp;")
 			}},
-			{ field : 'summary',title : '目的' }, 
-			{ field : 'issues',title : '风险' }
+			{ field : 'summary',title : '目的',width:'30%',}, 
+			{ field : 'issues',title : '风险',width:'30%', }
 		]
 
 		var editIndex = undefined;
@@ -245,6 +249,8 @@ treeDataTool = {
 					$('#treedatalist').datagrid('endEdit', editIndex);
 					editIndex = undefined;
 				}
+			},
+			onDblClickCell:function(index, field){
 				if('owner,status,priority,progress,pendtime,endtime'.indexOf(field)>=0){
 					editIndex = index;
 					$('#treedatalist').datagrid('selectRow', index).datagrid('editCell', {index:index,field:field});
@@ -275,15 +281,15 @@ treeDataTool = {
 			$("#planName").val("")
 		else if (planData) {
 			$("#planName").val(planData.name)
-			$("#planOwner").val(planData.owner)
 			$("#planSummary").val(planData.summary)
 			$("#planIssues").val(planData.issues)
 			$("#planTags").val(planData.tags)
 			//$("#progress").val(planData.progress)
 			$("#ptype").val(planData.ptype)
-			$("#planPrioirity").val(planData.priority)
+			$("#planPriority").val(planData.priority)
 			$("#planStatus").val(planData.status)
-			$("#planOwner").val(planData.owner)
+			$("#planOwner").combobox("setValues", planData.owner.split(","))
+			$("#planVersion").combobox("setValue", planData.version)
 
 			$("#pstarttime").datebox("setValue", planData.pstarttime)
 			$("#pendtime").datebox("setValue", planData.pendtime)
@@ -296,7 +302,8 @@ treeDataTool = {
 
 	saveTreeData : function(isClose) {
 		var name = $("#planName").val()
-		var owner = $("#planOwner").val()
+		var owner = $("#planOwner").combobox("getValues").join(",")
+		var version = $("#planVersion").combobox("getValue")
 		var tags  = $("#planTags").val()
 		var summary = $("#planSummary").val()
 		var issues = $("#planIssues").val()
@@ -304,7 +311,7 @@ treeDataTool = {
 		var ptype = $("#ptype").val()
 		var priority = $("#planPriority").val()
 		var status = $("#planStatus").val()
-		var progress = 0
+		var progress = 0			
 
 		var pstarttime = $("#pstarttime").datebox("getValue")
 		var pendtime = $("#pendtime").datebox("getValue")
@@ -322,7 +329,7 @@ treeDataTool = {
 			var progress = planData.progress
 			var fnid = planData.fnid
 		}
-		CTestPlanAPi.saveCtestplan(name, owner, tags, summary, issues,
+		CTestPlanAPi.saveCtestplan(name, owner, version, tags, summary, issues,
 			ptype, priority, status, progress, pstarttime, pendtime, starttime, endtime,
 			mailto, fnid, nid1, nid2, planid)
 	
@@ -356,30 +363,21 @@ treeDataTool = {
 	}
 }
 
-treeTool.initTree()
+treeTool.initTree();
 
++function(){
+	$('#condptype').combobox({data: CTestPlanAPi.getEnum("planType").concat({'v':'','n':"所有类型"}), width:'80px',valueField:'v', textField:'n', value:"",onChange: function(){treeDataTool.loadTreeDataList();}});
+	$('#condplanPriority').combobox({data: CTestPlanAPi.getEnum("planPriority").concat({'v':'','n':"优先级"}), width:'80px',valueField:'v', textField:'n', value:"",onChange: function(){treeDataTool.loadTreeDataList();}});
+	$('#condplanStatus').combobox({data: CTestPlanAPi.getEnum("planStatus").concat({'v':9,'n':"未完成"}), width:'80px',valueField:'v', textField:'n', value:"9",onChange: function(){treeDataTool.loadTreeDataList();}});
 
+	$('#planVersion').combobox({data: CTestPlanAPi.getVersion(),
+		width:'80px',valueField:'cname', textField:'cname', value:""});
 
-$.extend($.fn.datagrid.methods, {
-	editCell: function(jq,param){
-		return jq.each(function(){
-			var opts = $(this).datagrid('options');
-			var fields = $(this).datagrid('getColumnFields',true).concat($(this).datagrid('getColumnFields'));
-			for(var i=0; i<fields.length; i++){
-				var col = $(this).datagrid('getColumnOption', fields[i]);
-				col.editor1 = col.editor;
-				if (fields[i] != param.field){
-					col.editor = null;
-				}
-			}
-			$(this).datagrid('beginEdit', param.index);
-			for(var i=0; i<fields.length; i++){
-				var col = $(this).datagrid('getColumnOption', fields[i]);
-				col.editor = col.editor1;
-			}
-		});
-	}
-});
+	var allowners = AuthApi.getOwners();
+	$('#planOwner').combobox({data: allowners, multiple:true,
+		width:'290px',valueField:'calias', textField:'calias', value:""});
+
+}();
 
 </script>
 

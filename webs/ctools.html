@@ -7,7 +7,7 @@
 	<link rel="stylesheet" type="text/css" href="js/themes/icon.css">
 	<script type="text/javascript" src="js/jquery.min.js"></script>
 	<script type="text/javascript" src="js/jquery.easyui.min.js"></script>
-	<script src="CTestClient.js"></script>
+	<script src="cservice.js"></script>
 	<script src="/cservice/js"></script>
 </head>
 <body class="easyui-layout">
@@ -205,7 +205,7 @@ CServiceToolView = {
 			var isNewTr = false
 			if(undefined == da.s){
 				if(da.t != null&& da.t.indexOf("textarea")>=0){
-					argInput = "<textarea cols=135 " +da.t.split("textarea")[1] +" id='inf_"+ da.n +"' />"
+					argInput = "<textarea cols=120 " +da.t.split("textarea")[1] +" id='inf_"+ da.n +"' />"
 					isNewTr = true
 				}else
 					argInput = "<input size=50 id='inf_"+ da.n +"' />"
@@ -354,7 +354,7 @@ CServiceToolView = {
 			return
 		}
 		lresp.tabs('add',{title:"共"+respVal.length+"条",
-			content:"<table id='inf_response_list' style='height:450px' data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>"})
+			content:"<table id='inf_response_list' data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>"})
 		var respColumns = CServiceToolView.SearchPropColumns(respVal, showProp)
 		$('#inf_response_list').datagrid({ columns:[respColumns], data: respVal, loadFilter: function(data){
 			if (typeof data.length == 'number' && typeof data.splice == 'function'){
