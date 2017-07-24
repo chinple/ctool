@@ -207,3 +207,13 @@ $.extend($.fn.datagrid.methods, {
 		});
 	}
 });
+
+$.fn.combobox.defaults.filter = function (q,row){
+	var opts=$(this).combobox("options");
+	return row[opts.textField].toLowerCase().indexOf(q.toLowerCase())>=0 ||(row.info&& row.info.toLowerCase().indexOf(q.toLowerCase())>=0);
+}
+
+$.fn.combobox.defaults.formatter = function (row){
+	var opts=$(this).combobox("options");
+	return row[opts.textField] +(row.info?(" "+row.info):"");
+}

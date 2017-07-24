@@ -340,11 +340,11 @@ class CTestPlanAPi:
             raise Exception("Not the creator, delete failed")
 
     def getProject(self, condition=None):
-        pros = self.dbapi.getTestConfig("deploy", ckey="project", status=1)
+        pros = self.dbapi.getTestConfig("deploy", ckey="project", status=1, fields="cname,calias as info")
         return pros
 
     def getVersion(self, condition=None):
-        pros = self.dbapi.getTestConfig("plan", ckey="version", status=1)
+        pros = self.dbapi.getTestConfig("plan", ckey="version", status=1, fields="cname,ccontent as info")
         return pros
 
     def getBranch(self, project):
@@ -396,7 +396,7 @@ class AuthApi(LocalMemSessionHandler):
         self.__ignorePaths__('/clogin.html', '/cservice/CServiceTool/RegistServer', '/cservice/CTestPlanAPi/exportCtestcase')
 
     def getOwners(self):
-        pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="cname,calias")
+        pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="cname as info,calias")
         return pros
 
     def registerOwner(self, cname, calias, email=None, passwd=None):
