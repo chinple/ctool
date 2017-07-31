@@ -42,7 +42,9 @@ treeTool = {
 						tn.insert(0,p.nid)
 						p = $(this).tree('getParent',p.target)
 					}
-					window.location.href = window.location.pathname + "?tree=" + tn.join(",")
+					window.location.href = window.location.pathname + "#tree=" + tn.join(",")
+					condition = DataOperation.GetCondition()
+					treeTool.expandTree(condition.tree)
 				}
 			},
 			onDblClick : function(node) {

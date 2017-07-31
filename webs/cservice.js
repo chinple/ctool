@@ -76,7 +76,11 @@ DataOperation = {
 		}
 		var jcond={}
 		try{
-			var conds = condStr.split('?')[1].split('&')
+			var conds;
+			if(condStr.indexOf("#")>0)
+				conds = condStr.substr(condStr.indexOf("#")+1).split('&')
+			else
+				conds = condStr.substr(condStr.indexOf("#")+1).split('&')
 			for(var condIndex in conds){
 				var cnIndex = conds[condIndex].indexOf("=")
 				jcond[conds[condIndex].substr(0,cnIndex)]=conds[condIndex].substr(cnIndex+1)

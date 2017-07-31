@@ -98,6 +98,7 @@ class CTestPlanAPi:
             plan = plans[0]
             planStatus = cprop.getVal('plan', 'planStatus').split()
             plan['planStatus'] = planStatus[plan['status']]
+            if plan['version'] is None:plan['version'] = ""
             plan['pstarttime'] = str(plan['pstarttime']).split()[0]
             plan['pendtime'] = str(plan['pendtime']).split()[0]
             plan['starttime'] = str(plan['starttime']).split()[0]
@@ -393,7 +394,7 @@ class AuthApi(LocalMemSessionHandler):
     def __setup__(self):
         self.redirectPath = '/clogin.html'
         self.__ignoreMethods__('checkLogin', 'registerOwner')
-        self.__ignorePaths__('/clogin.html', '/cservice/CServiceTool/RegistServer', '/cservice/CTestPlanAPi/exportCtestcase')
+        self.__ignorePaths__('/clogin.html', '/cservice/CServiceTool/RegistServer', '/cservice/CTestPlanAPi/exportCtestcase', '/uploads/mserver.tar')
 
     def getOwners(self):
         pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="cname as info,calias")

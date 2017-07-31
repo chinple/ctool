@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 '''
 
-@author: xinxiu
+@author: 
 '''
 from mtest import model, TestCaseBase, scenario
 from testexecuting import CTestPlanAPi
@@ -34,14 +34,14 @@ class TestExecuting(TestCaseBase):
     
 
 2. 测试对各业务模块未有较全的业务文档和用例，版本后需要增加相关文档'''
-        cp.sendPlanSummaryEmail(planid, summary, issues, sender="xinxiu", receiver="xinxiu@wacai.com", ccReceiver="", isSetFinish=True)
+        cp.sendPlanSummaryEmail(planid, summary, issues, sender="", receiver="@.com", ccReceiver="", isSetFinish=True)
 
     @scenario(param={},
         where={})
     def testDailyReport(self):
         cp = CTestPlanAPi()
         planid = 5
-        cp.sendPlandailyEmail(planid, day="2017-06-27", sender="xinxiu", receiver="xinxiu@wacai.com", ccReceiver="")
+        cp.sendPlandailyEmail(planid, day="2017-06-27", sender="", receiver="@.com", ccReceiver="")
     @scenario(param={},
         where={})
     def testGroupReport(self):
