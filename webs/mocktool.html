@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>mock</title>
+<link href="js/css/bootstrap.min.css" rel="stylesheet">
+<link href="js/css/style.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css"
+	href="js/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="js/themes/icon.css">
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript" src="js/jquery.easyui.min.js"></script>
+
+<script src="cservice.js"></script>
+<script src="/cservice/js"></script>
+<script src="cplantree.js"></script>
+</head>
+
+<header class="navbar  navbar-fixed-top navbar-static-top bs-docs-nav" role="banner">
+	<div class="navbar navbar-left">
+		<nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
+			<ul class="nav navbar-nav">
+				<li><a href="/cplan.html">测试计划</a> </li>
+				<li><a href="/cplancase.html">测试用例</a></li>
+				<li><a href="/cdeploy.html">提测&发布</a></li>
+				<li><a href="/ctools.html">测试工具</a></li>
+				<li><a href="cconfig.html">配置管理</a></li>
+				<li style= "background:#e8e8e8"><a href="/mocktool.html">mock</a></li>
+			</ul>
+		</nav>
+	</div>
+	<div class="navbar navbar-right">
+			<ul class="nav navbar-nav">
+				<li><a href='#' id='welcomeid'></a> </li>
+			</ul>
+	</div>
+</header>
+<script>
+welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
+</script>
+
+<body class="easyui-layout">
+
+	<div data-options="region:'north',border:false" style="height: 10ptx;">
+		<br><br><br>
+	</div>
+
+<!-- proxy mock update data -->
+	<div id="showproxy" class="easyui-dialog" title="代理设置"
+		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
+		style="padding: 10px;">
+		 描述<input id="proxyinfo" size=100><br>
+		 代理<textarea id='proxyconfig' cols=110 rows=4></textarea>
+		
+		<br><a href="javascript:" onclick="operateProxyData(0,3)"
+			class="easyui-linkbutton">保存代理</a>
+	</div>
+	
+	<div id="showmock" class="easyui-dialog" title="mock设置"
+		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
+		style="padding: 10px;">
+		 描述<input id="mockinfo" size=100><br>
+		 URL<input id="mockurl" size=100><br>
+		 参数<input id="mockparam" size=100>(可为空)<br>
+		 返回<textarea id='mockresp' cols=110 rows=6></textarea>
+		<br><a href="javascript:" onclick="operateMockData(0,3)" class="easyui-linkbutton">保存mock</a>
+	</div>
+
+<br><br><br>
+<div class="easyui-tabs">
+
+	<div title="mock" style="padding:10px">
+		<div class="easyui-panel" data-options="multiple:true"
+			style="background: #f5f5f5; width: 100%">
+			<a href="javascript:" onclick="$('#showmock').dialog('open')" class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增mock</a>&nbsp;&nbsp;
+			<input id='condMockName' size=30 onkeypress="if(event.keyCode==13) showmock()" placeholder="URL、描述"/> 
+		</div>
+
+		<div data-options="multiple:true">
+			<table id='mockdatalist'
+				data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:10'></table>
+		</div>
+	</div>
+	
+	<div title="proxy" style="padding:10px">
+		<div class="easyui-panel" data-options="multiple:true"
+			style="background: #f5f5f5; width: 100%">
+			<a href="javascript:" onclick="$('#showproxy').dialog('open')" class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增代理</a>&nbsp;&nbsp;
+			<input id='condProxyName' size=30 onkeypress="if(event.keyCode==13) showproxy()" placeholder="域名/URL、描述"/> 
+		</div>
+
+		<div data-options="multiple:true">
+			<table id='proxydatalist'
+				data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:10'></table>
+		</div>
+	</div>
+</div>
+
+</body>
+
+<script type="text/javascript">
+var pmdata = {
+	addr: "172.16.6.37:8090",
+	mockHost: "comproxy.test.wacai.info"
+};
+
+function showproxy(){
+	pmdata.pdata = ProxyMockTool.getProxys(pmdata.addr, condProxyName.value)
+	var dataCols = [
+	  { field : 'i',title : '描述',width:200},
+	  { field : 'p',title : '代理',width:500, formatter : function(value, row, index) {
+		return value.replace(/\n/g, "<br>")
+	  }},
+	  { field : 't',title : '操作',width:100, formatter : function(value, row, index) {
+		return [
+				'<a href="javascript:" onclick="operateProxyData(\''+value+'\', 1)">修改</a>',
+				'<a href="javascript:" onclick="operateProxyData(\''+value+'\', 2)">删除</a>'
+			].join("&nbsp;")
+	  }}]
+
+	$('#proxydatalist').datagrid( treeTool.getLoadDataJson(dataCols, pmdata.pdata));
+}
+
+function operateProxyData(t, op){
+	if(op==1){
+		var e = pmdata.pdata.foreach(function(i,e){if(e.t==t)return e})
+		pmdata.t = e.t
+		proxyinfo.value = e.i
+		proxyconfig.value = e.p
+		$('#showproxy').dialog('open')
+	}else if(op==2){
+		$.messager.confirm('代理', '确定删除代理', function(r){
+			if (r){
+				ProxyMockTool.deleteProxy(pmdata.addr, t)
+				showproxy();
+			}
+		});
+	}else if(op==3){
+		ProxyMockTool.addProxy(pmdata.addr, proxyinfo.value, proxyconfig.value, pmdata.t)
+		$('#showproxy').dialog('close')
+		showproxy();
+	}
+}
+
+
+function showmock(){
+	pmdata.mdata = ProxyMockTool.getUrlMock(pmdata.addr,condMockName.value)
+	var dataCols = [
+	  { field : 'i',title : '描述',width:"20%"},
+	  { field : 'url',title : 'URL',width:"20%", formatter : function(value, row, index) {
+		return (row.isdelete=="true"?"未生效 ":"")+"<a target='_blank' href='http://"+pmdata.mockHost+""+row.url+(row.param!=""?("?"+row.param):"")+"'>"+value+"<a>"
+	  } },
+	  { field : 'param',title : '参数',width:"15%"},
+	  { field : 'resp',title : '返回',width:"35%"},
+	  
+	  { field : 't',title : '操作',width:"8%", formatter : function(value, row, index) {
+		return [
+				'<a href="javascript:" onclick="operateMockData(\'' + value +'\', 1)">修改</a>',
+				'<a href="javascript:" onclick="operateMockData(\'' + value +'\', 2, false)">失效</a>',
+				'<a href="javascript:" onclick="operateMockData(\'' + value +'\', 2, true)">删除</a>'
+			].join("&nbsp;")
+	  }}]
+
+	$('#mockdatalist').datagrid( treeTool.getLoadDataJson(dataCols, pmdata.mdata));
+}
+
+function operateMockData(t, op, isdelete){
+    var mockdata = pmdata.mdata.foreach(function(i,e){if(e.t==t)return e})
+	if(op==1){
+		pmdata.t = mockdata.t
+		mockinfo.value = mockdata.i
+		mockurl.value = mockdata.url
+		mockparam.value = mockdata.param
+		mockresp.value = mockdata.resp
+		$('#showmock').dialog('open')
+	}else if(op==2){
+		if(!isdelete){
+			ProxyMockTool.deleteUrlMock(pmdata.addr, t, mockdata.url, 'false')
+			showmock();
+		}
+		else
+		$.messager.confirm('mock', '确定删除mock', function(r){
+			if (r){
+				ProxyMockTool.deleteUrlMock(pmdata.addr, t, mockdata.url, 'true')
+				showmock();
+			}
+		});
+	}else if(op==3){
+		ProxyMockTool.addUrlMock(pmdata.addr, mockinfo.value,mockurl.value,mockparam.value,mockresp.value,pmdata.t)
+		$('#showmock').dialog('close')
+		pmdata.t=null
+		showmock();
+	}
+}
+
+showproxy();
+showmock();
+
+</script>
+
+</html>
