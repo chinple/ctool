@@ -12,10 +12,10 @@
 		
 	<script src="cservice.js"></script>
 	<script src="/cservice/js"></script>
+	<script src="cplantree.js"></script>
 
 	<style type="text/css">
 <!--
-/************ Table ************/
 .cplantable {border-collapse: collapse;border: 1px solid #ccc;}    
 .cplantable thead td {font-size: 14px;color: #333333;text-align: center;background: repeat-x top center;border: 1px solid #ccc; font-weight:bold;}
 .cplantable tbody tr {background: #fff;font-size: 12px;color: #666666;}           
@@ -51,7 +51,7 @@ width:300px;
 				<li><a href="/cdeploy.html">提测&amp;发布</a></li>
 				<li><a href="/ctools.html">测试工具</a></li>
 				<li><a href="cconfig.html">配置管理</a></li>
-				<li class='active'><a href="#">测试执行</a></li>
+				<li class='active'><a href="javascript:">测试执行</a></li>
 			</ul>
 		</nav>
 	</div>
@@ -76,9 +76,10 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		<table>
 			<tr><td>目的&nbsp;&nbsp;&nbsp;&nbsp;</td><td id='planTarget'></td>
 				<td align='right'>
-					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.addCases()">添加用例</a>
-					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.showDailyReport()">发送日报</a>
-					<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.showPlanReport()">生成测试报告</a>
+					<a href="javascript:" class="easyui-linkbutton" onclick="planTool.showPlanDetail()">修改备注</a>
+					<a href="javascript:" class="easyui-linkbutton" onclick="planTool.addCases()">添加用例</a>
+					<a href="javascript:" class="easyui-linkbutton" onclick="planTool.showDailyReport()">发送日报</a>
+					<a href="javascript:" class="easyui-linkbutton" onclick="planTool.showPlanReport()">生成测试报告</a>
 				</td>
 			</tr>
 			<tr><td>详情</td><td id='planDetail' colspan=2></td></tr>
@@ -100,10 +101,18 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 					</select>&nbsp;&nbsp;
 					<input type='button' value='同步用例' title='同步用例更改到本计划中执行的用例中' onClick='planTool.syncPlancases()'/>
 					<input type='button' value='重置测试结果' title='将测试用例重置为：未执行' onClick='planTool.resetPlancaseresult()'/>
+					<input type='button' value='导出用例(review)' title='版本用例review' onClick='window.open("/cservice/CTestPlanAPi/exportCtestcase?planid="+condition.planid)'/>
 				</div>
 				<table id='plancaselist' data-options='singleSelect:false,rownumbers:true,pagination:true,pageSize:20'></table>
 			</div>
 		</div>
+	</div>
+
+	<div id="showModifyPlanDetail" class="easyui-dialog" title="测试计划详情" data-options="iconCls:'icon-save',closable:true,closed:true,modal:true" style=" padding: 10px;">
+		详情: &nbsp;&nbsp;&nbsp;&nbsp;<textarea id='dailyplanSummary' rows=6 cols=120></textarea><br>
+		风险: &nbsp;&nbsp;&nbsp;&nbsp;<textarea id='dailyplanIssues' rows=6 cols=120></textarea>
+		<br>
+		<a href="javascript:" onclick="planTool.savePlanDetail()" class="easyui-linkbutton">修改计划详情</a>
 	</div>
 
 	<div id='caseAddDialog' class="easyui-dialog" title="测试用例" style="width:1000px;height:90%;align:top"
@@ -112,8 +121,8 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		<table width='100%'><tr><td valign="top" style="width:150px">
 	    	<ul class="easyui-tree" id="folder-list" data-options="animate:true,checkbox:false"></ul>
 	    </td><td valign='top' align='right'>
-			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveCaseNode()">返回计划</a>
-			<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveCaseNode()">添加用例</a>
+			<a href="javascript:" class="easyui-linkbutton" onclick="planTool.saveCaseNode()">返回计划</a>
+			<a href="javascript:" class="easyui-linkbutton" onclick="planTool.saveCaseNode()">添加用例</a>
 			<br>
 			<table id='casedatalist' data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>		
 		</td></tr></table>
@@ -143,9 +152,9 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		</td>
 		
 		<td align='right'>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveDaily(0)">保存草稿</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveDaily(1)">发送日报</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.saveDaily(0);planTool.showPlanReport()">生成测试报告</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="planTool.saveDaily(0)">保存草稿</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="planTool.saveDaily(1)">发送日报</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="planTool.saveDaily(0);planTool.showPlanReport()">生成测试报告</a>
 		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br><br>
 		</td></tr>
 		<tr><td valign="top">当前进展:</td><td colspan=2><textarea id='dailySummary' rows=8 cols=120></textarea></td></tr>
@@ -162,8 +171,8 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 				<input id='mailto' size=45/>&nbsp;cc
 				<input id='mailcc' size=30/>
 				&nbsp;&nbsp;
-				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#dailyEmail').dialog('close');planTool.showDailyReport()">返回日报</a>
-				<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.sendDailyEmail()">确定发送</a>
+				<a href="javascript:" class="easyui-linkbutton" onclick="$('#dailyEmail').dialog('close');planTool.showDailyReport()">返回日报</a>
+				<a href="javascript:" class="easyui-linkbutton" onclick="planTool.sendDailyEmail()">确定发送</a>
 			</td></tr>
 			<tr> <td><br> </td></td></tr>
 			<tr> <td>主题: </td><td id='dailySubject'></td></tr>
@@ -182,9 +191,9 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		<input id='reportmailcc' size=30/>&nbsp;&nbsp;
 		<input id='reportisSetFinish' type='checkbox' checked />测试完成
 		&nbsp;&nbsp;&nbsp;&nbsp;
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#planReport').dialog('close');$('#dailyPannel').tabs('select','测试计划')">返回计划</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="$('#planReport').dialog('close');$('#dailyPannel').tabs('select','测试用例')">返回用例</a>
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.sendPlanSummaryReport()">确定发送</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="$('#planReport').dialog('close');$('#dailyPannel').tabs('select','测试计划')">返回计划</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="$('#planReport').dialog('close');$('#dailyPannel').tabs('select','测试用例')">返回用例</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="planTool.sendPlanSummaryReport()">确定发送</a>
 	</td></tr>
 
 	<tr><td width=70 style='white-space:nowrap'>测试目的</td> <td id='planReportTarget'></td> </tr>
@@ -203,7 +212,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 	<tr><td>测试场景</td> <td> <input id="plancasescenario" size="40"><input id="plancaseidremark" type='hidden'>
 		<input id="caseidremark" type='hidden'>
 		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="planTool.savePlancaseRemark()">修改并关闭</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="planTool.savePlancaseRemark()">修改并关闭</a>
 	</td> </tr>
 	<tr><td>测试要点</td> <td><br><textarea id='plancasename' rows=2 cols=120></textarea></td> </tr>
 	<tr><td>用例备注</td> <td > <textarea id='plancaseremark' rows=4 cols=120></textarea> </td> </tr>
@@ -228,6 +237,17 @@ Array.prototype.foreach = function(f, arg){
 }
 
 planTool = {
+	showPlanDetail: function(){
+		$('#showModifyPlanDetail').dialog('open')
+		dailyplanSummary.value = planTool.planData.summary
+		dailyplanIssues.value = planTool.planData.issues
+	},
+	savePlanDetail: function(){
+		if(CTestPlanAPi.updateCtestplan(planTool.planData.planid, {"summary":dailyplanSummary.value,"issues":dailyplanIssues.value})){
+			planTool.loadPlanAndcases()
+		}
+		$('#showModifyPlanDetail').dialog('close')
+	},
     caseRootId: 2,
 	getTreeNodeData: function(fnid){
 		var nodesData = CTestPlanAPi.getCtreeRoot(fnid)
@@ -457,8 +477,8 @@ planTool = {
 		if(!planTool.planData.mailfrom)
 			planTool.planData.mailfrom = planTool.planData.owner
 		$("#reportmailfrom").val(planTool.planData.mailfrom)
-		$("#reportmailto").val(planTool.planData.mailto)
-		$("#reportmailcc").val(planTool.planData.mailcc)
+		emailOperation.setEmailInput("#reportmailto", planTool.planData.mailto)
+		emailOperation.setEmailInput("#reportmailcc", planTool.planData.mailcc)
 		$('#planReport').dialog('open')
 		var psummary = CTestPlanAPi.getPlanSummary(planData.planid)
 		if(psummary){
@@ -468,7 +488,7 @@ planTool = {
 	},
 	sendPlanSummaryReport: function(){
 		var emailRes = CTestPlanAPi.sendPlanSummaryEmail(planTool.planData.planid,$("#planreportSummary").val(),$("#planreportIssues").val(),
-			$("#reportmailfrom").val(), $("#reportmailto").val(), $("#reportmailcc").val(), reportisSetFinish.checked)
+			$("#reportmailfrom").val(), emailOperation.getEmailInput("#reportmailto"), emailOperation.getEmailInput("#reportmailcc"), reportisSetFinish.checked)
 		$.messager.show({title:'测试计划', msg:'发送结果: '+emailRes, timeout:2000,
 				style:{ right:'', top:100, bottom:'' }})
 		$('#planReport').dialog('close')
@@ -505,16 +525,16 @@ planTool = {
 		if(!planTool.planData.mailfrom)
 			planTool.planData.mailfrom = planTool.planData.owner
 		$("#mailfrom").val(planTool.planData.mailfrom)
-		$("#mailto").val(planTool.planData.mailto)
-		$("#mailcc").val(planTool.planData.mailcc)
+		emailOperation.setEmailInput("#mailto", planTool.planData.mailto)
+		emailOperation.setEmailInput("#mailcc", planTool.planData.mailcc)
 		var dailyEmail = CTestPlanAPi.getPlandailyEmail(condition.planid, planTool.emailDay)
 		dailySubject.innerHTML = dailyEmail[0]
 		dailyBody.innerHTML = dailyEmail[1]
 	},
 	sendDailyEmail:function(){
 		var sender = $("#mailfrom").val()
-		var receiver = $("#mailto").val()
-		var ccReceiver = $("#mailcc").val()
+		var receiver = emailOperation.getEmailInput("#mailto")
+		var ccReceiver = emailOperation.getEmailInput("#mailcc")
 		var emailRes = CTestPlanAPi.sendPlandailyEmail(condition.planid, planTool.emailDay, sender, receiver, ccReceiver)
 		$.messager.show({title:'测试计划', msg:'发送结果: '+emailRes, timeout:2000,
 			style:{ right:'', top:100, bottom:'' }})
@@ -532,6 +552,25 @@ $(".easyui-textbox").textbox({ onChange: function(nv, ov){
 	planTool.loadCases(1)
 }})
 //setTimeout(planTool.showPlanReport,1)
+
+
+var emailOperation = {
+	renderEmailInput: function(eleid, data, width){
+		$(eleid).combobox({data: data, width:width,valueField:'addr', textField:'addr', multiple:true});
+	},
+	setEmailInput: function(eleid, data){
+		if(data)$(eleid).combobox("setValues",data.replace(";",",").split(","))
+	},
+	getEmailInput: function(eleid){
+		return $(eleid).combobox("getText")
+	}
+}
+var emaildata = AuthApi.getMailList()
+emailOperation.renderEmailInput("#mailto", emaildata, "300px")
+emailOperation.renderEmailInput("#mailcc", emaildata, "300px")
+
+emailOperation.renderEmailInput("#reportmailto", emaildata, "220px")
+emailOperation.renderEmailInput("#reportmailcc", emaildata, "200px")
 </script>
 
 </html>

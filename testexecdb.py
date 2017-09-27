@@ -48,7 +48,7 @@ class CtestDbOp:
         return sql.execute()
 
     def getCtestcase(self, fnid=None, nid1=None, nid2=None,
-            searchKey=None, ttype=None, priority=None, name=None, owner=None, planid=None, caseid=None):
+            searchKey=None, ttype=None, priority=None, name=None, owner=None, planid=None, caseid=None, isInplan=True):
         sql = self.sqlConn.getSql("testcase", Sql.select, True)
         conditions = []
         if not Sql.isEmpty(fnid):
@@ -63,7 +63,7 @@ class CtestDbOp:
         sql.appendWhereByJson({'name':name, "ttype":ttype, "priority":priority,
             "owner":owner, "caseid":caseid})
         if not Sql.isEmpty(planid):
-            sql.appendCondition("caseid not in (select caseid from plancase where planid=%s)" % planid)
+            sql.appendCondition("caseid %s in (select caseid from plancase where planid=%s)" % ("" if isInplan else "not", planid))
         if not Sql.isEmpty(searchKey):
             searchKey = '%%%s%%' % searchKey
             sql.appendCondition("(name like '%s' or tags like '%s'or scenario like '%s')" % (searchKey, searchKey, searchKey))
@@ -330,7 +330,7 @@ class CtestDbOp:
         return sql.execute()
 
     def getCdeploy(self, project=None, version=None, branch=None, phase=None,
-            creator=None, isadmin=False, fnid=None, nid1=None, nid2=None, deployid=None):
+            creator=None,  fnid=None, nid1=None, nid2=None, deployid=None):
         sql = self.sqlConn.getSql("cdeploy", Sql.select, True)
         sql.appendWhereByJson({'deployid': deployid, 'version':version})
         if phase == '9':
@@ -347,7 +347,7 @@ class CtestDbOp:
             conditions.append('nid2 = %s' % nid2)
         if len(conditions) > 0:
             sql.appendCondition("(%s)" % (" or ".join(conditions)))
-        if not isadmin:sql.appendCondition("(creator='%s' or owner='%s' or notifyer like '%%%s%%')" % (creator, creator, creator))
+        if creator is not None:sql.appendCondition("(creator='%s' or owner='%s' or notifyer like '%%%s%%')" % (creator, creator, creator))
 
         if not Sql.isEmpty(project):
             project = '%%%s%%' % project

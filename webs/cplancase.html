@@ -55,7 +55,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		<div id="addTreeData" onclick="treeDataTool.showTreeData(1)"
 			data-options="iconCls:'icon-add'">新增用例</div>
 		<div id="addTreeData" onclick="treeDataTool.loadTreeDataList(0,0,1)"
-			data-options="iconCls:'icon-move'">导出用例</div>
+			data-options="iconCls:'icon-move'">导出用例(review)</div>
 		<div class="menu-sep"></div>
 		<div onclick="treeTool.showTreeNode(1)"
 			data-options="iconCls:'icon-add'">新增目录</div>
@@ -69,7 +69,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		data-options="iconCls:'icon-save',closable:true,closed:true"
 		style="width: 550px; padding: 10px;">
 		<input id='treeName' size=50 />&nbsp;&nbsp; <input type='checkbox'
-			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="#"
+			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeTool.saveTreeNode()" class="easyui-linkbutton">保存目录</a>
 	</div>
 
@@ -94,19 +94,18 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 			
 		</table>
 		
-		<br><a href="#" onclick="treeDataTool.saveTreeData(1)"
-			class="easyui-linkbutton">保存并关闭</a>&nbsp;&nbsp;&nbsp; <a href="#"
+		<br><a href="javascript:" onclick="treeDataTool.saveTreeData(1)"
+			class="easyui-linkbutton">保存并关闭</a>&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">保存并添加</a>
 	</div>
 	
 	<div data-options="region:'center'">
 		<div class="easyui-panel" data-options="multiple:true"
 			style="background: #f5f5f5; width: 100%">
-			<div id="caseCondition">
-				<input id='condCaseName' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="用例、测试场景..."/> 
-				<input id='condttype'/>
-				<input id='condPriority'/>
-			</div>
+			<a href="javascript:" onclick='treeDataTool.showTreeData(1);treeTool.warnSelectRoot()' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增测试用例</a>&nbsp;&nbsp;
+			<input id='condCaseName' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="用例、测试场景..."/> 
+			<input id='condttype'/>
+			<input id='condPriority'/>
 		</div>
 
 		<div data-options="multiple:true">
@@ -152,8 +151,8 @@ treeDataTool = {
 		  { field : 'modifytime',title : '修改时间'},
 		  { field : 'caseid',title : '操作', formatter : function(value, row, index) {
 			return [
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
 				].join("&nbsp;")
 		  }},
 		  { field : 'remark',title : '备注', editor:'text', formatter: function(value, row, index) {

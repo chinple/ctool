@@ -2,7 +2,7 @@
 <html>
 <head>
 	<meta charset="UTF-8">
-	<title>工具管理 接口注册中心</title>
+	<title>工具&接口管理</title>
 	<link rel="stylesheet" type="text/css" href="js/themes/default/easyui.css">
 	<link rel="stylesheet" type="text/css" href="js/themes/icon.css">
 	<script type="text/javascript" src="js/jquery.min.js"></script>
@@ -12,14 +12,12 @@
 </head>
 <body class="easyui-layout">
 	<div data-options="region:'north',border:false" style="height:20ptx;">
-	<br>&nbsp;工具集：
+	<br>&nbsp;&nbsp;<a href="/">首页</a>&nbsp;&nbsp;<strong>工具集：</strong>
 		<select class="easyui-combobox" id="ltestToolSet" style="width:140px;" onchange="CServiceToolView.SwithServer(this.value)"></select>
-		工具接口：
+		&nbsp;&nbsp;<strong>工具服务：</strong>
 		<select class="easyui-combobox" id="infNameList" style="width:200px;" onchange="CServiceToolView.SwitchInf()"></select>
 		<input type="text" id="hostPort" value="10.68.239.51:8080">
-		<a href="javascript:void(0)" class="easyui-linkbutton" onclick="CServiceToolView.InitToolInfNameList()">查询接口</a>
-		<a href="LTestHelp.html">帮助</a>
-		<a id=newWindow>刷新</a>
+		<a href="javascript:" class="easyui-linkbutton" onclick="CServiceToolView.InitToolInfNameList()">查询接口</a>
 	</div>
 	<div data-options="region:'west',split:true,title:'数据 <input id=dataFilter class=easyui-textbox style=height:20px />'" style="width:230px;padding:10px;">
 		<ul class="easyui-tree" id="ltest-data" data-options="animate:true,checkbox:false"></ul>
@@ -27,19 +25,20 @@
 	<div data-options="region:'south',border:false" style="padding:5px;">Power By MTest. To make test as service.</div>
 	<div data-options="region:'center'">
 		<div class="easyui-panel" data-options="multiple:true" style="background:#f5f5f5;">
-			<a href="#" onclick='CServiceToolView.DoInfRequests()' title='快捷键F8' class="easyui-linkbutton" data-options="iconCls:'icon-ok'">Request</a>
+			<a href="javascript:" onclick='CServiceToolView.doInfRequests()' title='快捷键F8' class="easyui-linkbutton" data-options="iconCls:'icon-ok'">请求</a>
 			(<input type='input' id='requestRepeatTime' value='0' size=1/>秒)
-			<!--a href="#" onclick='CServiceToolView.DoInfDataTests()' class="easyui-linkbutton" data-options="toggle:true">Test</a>
-			<a href="#" onclick='CServiceToolView.DoInfDataTests(CServiceToolView.InfDatas,[],0)' class="easyui-linkbutton" data-options="toggle:true">TestAll</a -->
-			<a href="#" onclick='CServiceToolView.SaveInfData(true)' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增</a>
-			<a href="#" onclick='CServiceToolView.SaveInfData(false)' class="easyui-linkbutton" data-options="iconCls:'icon-save'">保存</a>
-			<a href="#" onclick='CServiceToolView.DeleteInfData()' class="easyui-linkbutton" data-options="iconCls:'icon-cancel'">删除</a>
+			<!--a href="javascript:" onclick='CServiceToolView.DoInfDataTests()' class="easyui-linkbutton" data-options="toggle:true">Test</a>
+			<a href="javascript:" onclick='CServiceToolView.DoInfDataTests(CServiceToolView.InfDatas,[],0)' class="easyui-linkbutton" data-options="toggle:true">TestAll</a -->
+			<a href="javascript:" onclick='CServiceToolView.SaveInfData(true)' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增</a>
+			<a href="javascript:" onclick='CServiceToolView.SaveInfData(false)' class="easyui-linkbutton" data-options="iconCls:'icon-save'">修改</a>
+			<a href="javascript:" onclick='CServiceToolView.deleteInfData()' class="easyui-linkbutton" data-options="iconCls:'icon-cancel'">删除</a>
 
-			<a href="#" onclick='CServiceToolView.MoveInfData(true)' class="easyui-linkbutton">上移</a>
-			<a href="#" onclick='CServiceToolView.MoveInfData(false)' class="easyui-linkbutton">下移</a>
-			<!-- a href="#" onclick='HtmlTag.SetTriggerVal("infRelyStep","style.display","","none")' class="easyui-linkbutton" >步骤</a>
-			<a href="#" onclick='HtmlTag.SetTriggerVal("show_prop","style.display","","none")' class="easyui-linkbutton" >结果</a>
-			<a href="#" class="easyui-linkbutton">生成数据</-->
+			<!--a href="javascript:" onclick='CServiceToolView.moveInfData(true)' class="easyui-linkbutton">上移</a>
+			<a href="javascript:" onclick='CServiceToolView.moveInfData(false)' class="easyui-linkbutton">下移</a>
+			<!-- a href="javascript:" onclick='HtmlTag.SetTriggerVal("infRelyStep","style.display","","none")' class="easyui-linkbutton" >步骤</a>
+			<a href="javascript:" onclick='HtmlTag.SetTriggerVal("show_prop","style.display","","none")' class="easyui-linkbutton" >结果</a>
+			<a href="javascript:" class="easyui-linkbutton">生成数据</-->
+			&nbsp;&nbsp;注意：请求才会调用服务；新增、修改只是将数据记录下来，不调用服务
 		</div>
 		<div id="ltest-condArg"></div>
 		<div id="ltest-response" class="easyui-tabs" data-options="multiple:true">
@@ -86,14 +85,14 @@ CServiceToolView = {
 	ReqTimes: 0,
 
 	InitToolSet: function(){
-		var toolServers = CServiceTool.RegistServer()
+		var toolServers = CServiceTool.getServer()
 		$("#ltestToolSet").combobox({textField:'n',valueField:'a', data:toolServers,
 			onSelect:function(tool){
 				CServiceToolView.SwithServer(tool['a'])
 			}})
 	},
 	InitToolInfNameList: function(){
-		CServiceToolView.InfApiInfo = CServiceTool.GetService(HtmlTag.GetVal("hostPort"))
+		CServiceToolView.InfApiInfo = CServiceTool.getService(HtmlTag.GetVal("hostPort"))
 		var hasInf = false
 		var dataList =[]
 		for(var infName in CServiceToolView.InfApiInfo){
@@ -164,7 +163,7 @@ CServiceToolView = {
 					HtmlTag.SetVal("inf_"+argInfo.n,argInfo.v)
 			}
 		}catch(e){}
-		newWindow.href = window.location.href.split("?")[0] + "?" + condUrl
+		window.location.href = window.location.href.replace("#","?").split("?")[0] + "#" + condUrl
 	},
 	GetInfArgInputName: function(argDesp){
 		if(undefined != argDesp.n)
@@ -279,7 +278,7 @@ CServiceToolView = {
 	ShowInfData: function(backIndex){
 		var dataFValue = HtmlTag.GetVal("dataFilter")
 		var dataIndex = CServiceToolView.GetSelectDataIndex()
-		CServiceToolView.InfDatas = CServiceTool.SearchInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(true))
+		CServiceToolView.InfDatas = CServiceTool.searchInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(true))
 		var infShowData = CServiceToolView.GroupInfData(dataFValue)
 		$('#ltest-data').tree({
 			data: infShowData,
@@ -399,9 +398,9 @@ CServiceToolView = {
 		})
 		lresp.tabs('select',0)
 	},
-	DoInfRequests: function(infRequests, infIndex, results){
+	doInfRequests: function(infRequests, infIndex, results){
 		if(infRequests == undefined){
-			var infRelys = CServiceTool.GetInfRelys(CServiceToolView.SyncInfRelys())
+			var infRelys = CServiceTool.getInfRelys(CServiceToolView.SyncInfRelys())
 			infRequests = infRelys[0]
 			infRequests.push([HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(), HtmlTag.GetVal("inf_desp")])
 			if(infRelys[1] != null)
@@ -417,7 +416,7 @@ CServiceToolView = {
 			var infRequest = infRequests[infIndex]
 			var nowTime = (new Date()).valueOf()
 			try{
-				var infResponse = CServiceTool.DoInfRequest(HtmlTag.GetVal("hostPort"), infRequest[0], infRequest[1])
+				var infResponse = CServiceTool.doInfRequest(HtmlTag.GetVal("hostPort"), infRequest[0], infRequest[1])
 			}catch(e){
 				var infResponse = e
 			}
@@ -428,17 +427,17 @@ CServiceToolView = {
 				var repeatTime = parseInt(HtmlTag.GetVal("requestRepeatTime"))
 				$.messager.progress("close")
 				if(repeatTime>=2){
-					SetArgTimeOut(CServiceToolView.DoInfRequests, repeatTime*1000)
+					SetArgTimeOut(CServiceToolView.doInfRequests, repeatTime*1000)
 				}
 				CServiceToolView.SetInfResponse("返回", infResponse, nowTime)
 			}else
-				CServiceToolView.DoInfRequests(infRequests, infIndex, results)
+				CServiceToolView.doInfRequests(infRequests, infIndex, results)
 		}, 2, [infRequests, infIndex, results])
 	},
 	SaveInfData: function(isClear){
 		if(isClear)
 			CServiceToolView.InfApiDataTime = null
-		CServiceTool.AddInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(),
+		CServiceTool.addInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.GetInfValues(),
 			isClear?"":HtmlTag.GetVal("inf_response"), HtmlTag.GetVal("inf_desp"),CServiceToolView.SyncInfRelys(),
 			CServiceToolView.GetCurApiIngoreArg(), CServiceToolView.InfApiDataTime)
 
@@ -514,7 +513,7 @@ CServiceToolView = {
 	},
 	DoInfDataTest: function(infData){
 		var curApiInfo = CServiceToolView.GetCurApiInfo()
-		var testRes = CServiceTool.ExecuteInfTest(HtmlTag.GetVal("hostPort"), HtmlTag.GetVal("infNameList"), infData.o, curApiInfo.in, curApiInfo.out)
+		var testRes = CServiceTool.executeInfTest(HtmlTag.GetVal("hostPort"), HtmlTag.GetVal("infNameList"), infData.o, curApiInfo.in, curApiInfo.out)
 		var result = "Passed"
 		if(testRes[0]%100!=0)
 			result = "Failed"
@@ -522,18 +521,18 @@ CServiceToolView = {
 			result = "Warned"
 		return {"name":infData.i, "result":result,"info":testRes[1]}
 	},
-	DeleteInfData: function(){
+	deleteInfData: function(){
 		if(!confirm("确定删除数据")){ return }
-		CServiceTool.DeleteInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.InfApiDataTime)
+		CServiceTool.deleteInfData(HtmlTag.GetVal("infNameList"), CServiceToolView.InfApiDataTime)
 		CServiceToolView.ShowInfData()
 	},
-	MoveInfData: function(isUp){
+	moveInfData: function(isUp){
 		var dataIndex = CServiceToolView.GetSelectDataIndex()
 		if(dataIndex==null)
 			return
 		var d1 = CServiceToolView.InfDatas[dataIndex]
 		var d2 = CServiceToolView.InfDatas[(isUp?-1:1)+dataIndex]
-		if(d1!=undefined && d2!=undefined && CServiceTool.MoveInfData(HtmlTag.GetVal("infNameList"), d1.t, d2.t)){
+		if(d1!=undefined && d2!=undefined && CServiceTool.moveInfData(HtmlTag.GetVal("infNameList"), d1.t, d2.t)){
 			CServiceToolView.ShowInfData(isUp?-1:1)
 		}
 	}
@@ -541,7 +540,7 @@ CServiceToolView = {
 
 document.onkeydown = function(we){
 	if(119 == we.keyCode)
-		CServiceToolView.DoInfRequests()
+		CServiceToolView.doInfRequests()
 	else if(113 == we.keyCode)
 		CServiceToolView.SaveInfData(true)
 }

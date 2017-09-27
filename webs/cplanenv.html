@@ -67,7 +67,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
 		style="width: 600px; height: 80px; padding: 10px;">
 		<input id='treeName' size=50 />&nbsp;&nbsp; <input type='checkbox'
-			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="#"
+			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeTool.saveTreeNode()" class="easyui-linkbutton">保存目录</a>
 	</div>
 
@@ -114,8 +114,8 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 			<tr><td>虚机详情</td><td><textarea id='vminfo' rows=6 cols=120></textarea></td></tr>
 		</table>
 		
-		<br><a href="#" onclick="treeDataTool.saveTreeData(1)"
-			class="easyui-linkbutton"> 保存</a>&nbsp;&nbsp;&nbsp; <a href="#"
+		<br><a href="javascript:" onclick="treeDataTool.saveTreeData(1)"
+			class="easyui-linkbutton"> 保存</a>&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">保存并添加</a>
 	</div>
 	

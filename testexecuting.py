@@ -11,6 +11,7 @@ from libs.objop import ObjOperation
 from server.csession import LocalMemSessionHandler
 from server.chandle import RedirectException, ReturnFileException
 from testexecdb import CtestDbOp, EmailReportor
+from libs.timmer import TimmerJson
 
 @cloudModule()
 class CTestPlanAPi:
@@ -62,10 +63,10 @@ class CTestPlanAPi:
         return self.dbapi.getCtestcase(fnid, nid1, nid2, searchKey, ttype, priority, name, owner, caseid)
 
     def getPlancases(self, fnid, planid):
-        return self.dbapi.getCtestcase(fnid, planid=planid)
+        return self.dbapi.getCtestcase(fnid, planid=planid, isInplan=False)
 
-    def exportCtestcase(self, fnid=None, nid1=None, nid2=None, searchKey=None, ttype=None, priority=None, owner=None):
-        raise ReturnFileException(self.emailRp.formatTestCase(self.dbapi.getCtestcase(fnid, nid1, nid2, searchKey, ttype, priority, owner=owner)),
+    def exportCtestcase(self, fnid=None, nid1=None, nid2=None, searchKey=None, ttype=None, priority=None, owner=None, planid=None):
+        raise ReturnFileException(self.emailRp.formatTestCase(self.dbapi.getCtestcase(fnid, nid1, nid2, searchKey, ttype, priority, owner=owner, planid=planid, isInplan=True)),
             'text/html')
 
     def deleteCtestcase(self, caseid):
@@ -83,7 +84,8 @@ class CTestPlanAPi:
         tryget = ObjOperation.tryGetVal
         return self.dbapi.saveCtestplan(owner=tryget(plan, 'owner', None), ptype=tryget(plan, 'ptype', None),
             priority=tryget(plan, 'priority', None), status=tryget(plan, 'status', None), progress=tryget(plan, 'progress', None),
-            pendtime=tryget(plan, 'pendtime', None), endtime=tryget(plan, 'endtime', None), planid=planid)
+            pendtime=tryget(plan, 'pendtime', None), endtime=tryget(plan, 'endtime', None),
+            summary=tryget(plan, 'summary', None), issues=tryget(plan, 'issues', None), planid=planid)
 
     def getCtestplan(self, fnid=None, nid1=None, nid2=None,
             nameOrTags=None, ptype=None, priority=None, inStatus=None, outStatus=None,
@@ -300,6 +302,9 @@ class CTestPlanAPi:
     def getTestConfig(self, subject=None, stype=None, cname=None, ckey=None, fnid=None, nid1=None, nid2=None, configid=None):
         return {'fileLink':cprop.getVal('cconfig', 'fileLink'), 'data':self.dbapi.getTestConfig(subject, stype, cname, ckey, fnid, nid1, nid2, configid)}
 
+    def getPlanTemplate(self, cname):
+        return self.dbapi.getTestConfig("plan", ckey="template", cname=cname, status=1, fields="ccontent")
+
     def saveTestConfig(self, cname, calias=None, status=None, subject=None, ckey=None, stype=None, ccontent=None,
             fnid=None, nid1=None, nid2=None, configid=None, __session__=None):
         owner = __session__['name']
@@ -323,17 +328,16 @@ class CTestPlanAPi:
         phase, status = (1 if phaseInit else 0, 0) if deployid is None else (None, None)
         creator = __session__['name']
         if deployid is not None:
-            deploy = self.dbapi.getCdeploy(isadmin=True, deployid=deployid)[0]
+            deploy = self.dbapi.getCdeploy(deployid=deployid)[0]
             if not __session__['admin'] and not self._isRelativeDeploy(creator, deploy):
                 raise Exception("Not the creator or owner")
         return self.dbapi.saveCdeploy(version, procode, proname, protype, branch, brancharg, pendtime,
             creator, owner, notifyer, remark, fnid, nid1, nid2, phase, status, deployarg, deployid=deployid)
 
     def getDeploy(self, project=None, version=None, branch=None, phase=None,
-            fnid=None, nid1=None, nid2=None, deployid=None, __session__=None):
-        creator = __session__['name']
-        isadmin = __session__['admin']
-        return self.dbapi.getCdeploy(project, version, branch, phase, creator, isadmin, fnid, nid1, nid2, deployid)
+            fnid=None, nid1=None, nid2=None, isRelativeOwner="false", __session__=None):
+        creator = __session__['name'] if str(isRelativeOwner).lower() == "true" else None
+        return self.dbapi.getCdeploy(project, version, branch, phase, creator, fnid, nid1, nid2)
 
     def deleteDeploy(self, deployid, __session__=None):
         creator = None if __session__['admin'] else  __session__['name'] 
@@ -357,7 +361,7 @@ class CTestPlanAPi:
     
     def startDeploy(self, deployid, deployargs, __session__):
         if Sql.isEmpty(deployid):raise Exception("Not found deployid")
-        deploy = self.dbapi.getCdeploy(isadmin=True, deployid=deployid)[0]
+        deploy = self.dbapi.getCdeploy(deployid=deployid)[0]
         owner = __session__['name']
         if self._isRelativeDeploy(owner, deploy):
             if deploy['status'] == '1': return deploy['status']
@@ -368,7 +372,7 @@ class CTestPlanAPi:
 
     def getDeployStatus(self, deployid):
         if Sql.isEmpty(deployid):raise Exception("Not found deployid")
-        deploy = self.dbapi.getCdeploy(isadmin=True, deployid=deployid)[0]
+        deploy = self.dbapi.getCdeploy(deployid=deployid)[0]
         # checking deploy status
         if deploy['status'] == '1':  self.dbapi.saveCdeploy(status=2, deployid=deployid)
         return "2"
@@ -389,12 +393,14 @@ class CTestPlanAPi:
 class AuthApi(LocalMemSessionHandler):
     def __init__(self):
         self.dbapi = object()  # imported from CTestPlanAPi
+        self.sysadmin = cprop.getVal("plan", "sysadmin")
+        self.tjson = TimmerJson()
         LocalMemSessionHandler.__init__(self)
 
     def __setup__(self):
         self.redirectPath = '/clogin.html'
         self.__ignoreMethods__('checkLogin', 'registerOwner')
-        self.__ignorePaths__('/clogin.html', '/cservice/CServiceTool/RegistServer', '/cservice/CTestPlanAPi/exportCtestcase', '/uploads/mserver.tar')
+        self.__ignorePaths__('/clogin.html', '/cservice/CServiceTool/registServer', '/cservice/CTestPlanAPi/exportCtestcase', '/uploads/mserver.tar')
 
     def getOwners(self):
         pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="cname as info,calias")
@@ -414,7 +420,7 @@ class AuthApi(LocalMemSessionHandler):
         owner = owners[0] if len(owners) >= 1 else None
         if owner is not None and (owner['cname'] == name or owner['calias'] == name) and owner['status'] == 1 :
             __session__['name'] = owner['calias']
-            __session__['admin'] = "xinxiu".__contains__(owner['cname'])
+            __session__['admin'] = self.sysadmin.__contains__(owner['cname'])
             __session__['authorized'] = True
             url = loginfrom[6:]
             if not url.__contains__(".html") and not url.__contains__("?"):
@@ -428,6 +434,21 @@ class AuthApi(LocalMemSessionHandler):
 
     def logout(self, session):
         return self.__invalidateSession__(session['id'])
+    
+    def getMailList(self):
+        emails = self.tjson.getKey("email")
+        if emails is None:
+            pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="ccontent")
+            emails = []
+            for p in pros:
+                try:
+                    addr = eval(p['ccontent'])['email']
+                    if addr is not None and addr != "": emails.append({'addr':addr})
+                except:pass
+            emails = tuple(emails)
+            self.tjson.addKey("email", emails)
+
+        return emails + self.dbapi.getTestConfig("plan", ckey="email", status=1, fields="cname as addr")
 
     def __checkSessionAuthStatus__(self, session, reqObj, reqPath, reqParam):
         return session.__contains__('authorized')
@@ -435,4 +456,4 @@ class AuthApi(LocalMemSessionHandler):
 if __name__ == "__main__":
     from cserver import servering
     cprop.load("cplan.ini")
-    servering("-p 8089 -f webs  -m cplan.html  -t testoolplatform.py")
+    servering("-p 8089 -f webs  -m cplan.html  -t testoolplatform.py -t testtoolcenter.py")

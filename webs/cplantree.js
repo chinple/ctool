@@ -26,10 +26,12 @@ treeTool = {
 	},
 	initTree : function() {
 		var condition = DataOperation.GetCondition()
-
+		var tdata = treeTool.getTreeNodeData(treeTool.treeRootId)
+		if(tdata.length>0 && !treeTool.treeRootNodeId)
+			treeTool.treeRootNodeId = tdata[0].nid
 		$('#folder-list').tree({
 			animate : true,
-			data : treeTool.getTreeNodeData(treeTool.treeRootId),
+			data : tdata,
 			onSelect : function(node){
 				if(treeTool.isInitTree){
 					treeTool.setNodeLayer(node)
@@ -76,9 +78,10 @@ treeTool = {
 					});
 			},
 			onLoadSuccess: function(){
+				if(!condition.tree&&treeTool.treeRootNodeId)
+					condition.tree = "" + treeTool.treeRootNodeId
 				if(condition.tree){
 					setTimeout(treeTool.expandTree, 2, condition.tree)
-					condition.tree = undefined
 				}
 			}
 		})
@@ -127,6 +130,12 @@ treeTool = {
 		treeTool.isNew = isNew
 		var fnid = treeTool.nid
 	},
+	warnSelectRoot: function(isHidMsg){
+		var n = $('#folder-list').tree('getSelected');
+		if(!isHidMsg && n.nid == treeTool.treeRootNodeId)
+			$.messager.alert("提醒", '您当前选择的是：<strong>根目录</strong>' +n.name+"，也可参考建议:<br>  1. 选择非根目录，新增  <br>2. 或选择目录后右键，选择新增");
+		return n.name
+	},
 	saveTreeNode : function() {
 		var name = $("#treeName").val()
 		if(isRootTree.checked){
@@ -149,11 +158,11 @@ treeTool = {
 			}
 	},
 	
-	getLoadDataJson: function(dataCols, datas){
+	getLoadDataJson: function(dataCols, datas,pageSize){
 		return {
 			columns : [ dataCols ],
 			data : datas,
-			pageSize: 20,
+			pageSize: pageSize,
 			loadFilter : function(data) {
 				if (typeof data.length == 'number'
 						&& typeof data.splice == 'function') {
@@ -212,7 +221,11 @@ $.extend($.fn.datagrid.methods, {
 
 $.fn.combobox.defaults.filter = function (q,row){
 	var opts=$(this).combobox("options");
-	return row[opts.textField].toLowerCase().indexOf(q.toLowerCase())>=0 ||(row.info&& row.info.toLowerCase().indexOf(q.toLowerCase())>=0);
+	try{
+		return row[opts.textField].toLowerCase().indexOf(q.toLowerCase())>=0 ||(row.info&& row.info.toLowerCase().indexOf(q.toLowerCase())>=0);
+	}catch(e){
+		return false;
+	}
 }
 
 $.fn.combobox.defaults.formatter = function (row){

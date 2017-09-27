@@ -64,64 +64,56 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 	</div>
 
 	<div id="treeAdd" class="easyui-dialog" title="目录"
-		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
-		style="width: 550px; padding: 10px;">
+		data-options="iconCls:'icon-save',closable:false,closed:true,modal:true" style="width: 550px; padding: 10px;">
 		<input id='treeName' size=50 />&nbsp;&nbsp; <input type='checkbox'
-			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="#"
+			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeTool.saveTreeNode()" class="easyui-linkbutton">保存目录</a>
 	</div>
 
 <!-- tree data -->
-	<div id="treedataadd" class="easyui-dialog" title="项目提测管理" data-options="iconCls:'icon-save',closable:true,closed:true,modal:true" style=" padding: 10px;">
+	<div id="treedataadd" class="easyui-dialog" title="子系统/项目提测管理" data-options="iconCls:'icon-save',closable:true,closed:true,modal:true" style=" padding: 10px;width:1010px">
 		<table>
-			<tr>
-				<td>版本<input id='version' size=8/> 项目<input id='procode'> 
+			<tr><td>版本</td>
+				<td><input id='version'/> 项目<input id='procode'> 
 					&nbsp;&nbsp; 分支<input id='branch'/>
-					&nbsp;&nbsp;计划发布<input id='pendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
+					&nbsp;&nbsp;发布时间<input id='pendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
+				</td><td><a href="javascript:" onclick="treeDataTool.saveTreeData(2)" class="easyui-linkbutton">提交测试</a>
+					<a href="javascript:" onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">提交并继续添加</a>
 				</td></tr>
-			<tr>
-				<td>
-					备注<textarea id='remark' cols='95' rows=5/></textarea><br><br>
-					责任人<input id='owner'> &nbsp;&nbsp;相关人<input id='notifyer'/>
+			<tr><td>主测</td>
+				<td colspan=2><input id='owner'> &nbsp;&nbsp;相关人<input id='notifyer'/>
+				<a href="javascript:" onclick="remark.value=treeTool.cdeployTemplate" class="easyui-linkbutton">导入提测模版</a>
 				</td></tr>
-			<tr>
-				</tr>
-
+			<tr><td>内容</td>
+				<td colspan=2><textarea id='remark' cols='130' rows=15/></textarea></td></tr>
 		</table>
-		<br>
-		<a href="#" onclick="treeDataTool.saveTreeData(2)" class="easyui-linkbutton">提交测试</a>&nbsp;&nbsp;&nbsp;
-		<a href="#" onclick="treeDataTool.saveTreeData(1)" class="easyui-linkbutton">保存并关闭</a>&nbsp;&nbsp;&nbsp; 
-		<a href="#" onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">保存并继续添加</a>
-
 	</div>
 	
-	<div id="deployop" class="easyui-dialog" title="项目操作"
-		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
-		style="padding: 10px;">
+	<div id="deployop" class="easyui-dialog" title="部署控制" data-options="iconCls:'icon-save',closable:true,closed:true,modal:true" style="padding: 10px;">
 		<table>
 			<tr>
 			<td>
+			主测人<input id='nextowner'/>
+			<a href="javascript:" onclick="treeDataTool.changeDeployop(0,true)" class="easyui-linkbutton">转交主测人</a>
+			<br><br>
 			部署阶段<input id='phase' readonly size=8/>
-			<a href="#" onclick="treeDataTool.changeDeployop(1)" class="easyui-linkbutton">转到下阶段</a>
-			<a href="#" onclick="treeDataTool.changeDeployop(-1)" class="easyui-linkbutton">回退上阶段</a>
-			&nbsp;&nbsp;下步责任人<input id='nextowner'/>
-			<a href="#" onclick="treeDataTool.changeDeployop(0,true)" class="easyui-linkbutton">转交责任人</a>
-		<br><br>部署参数<input id='deployarg'>
-		<a href="#" onclick="treeDataTool.startDeployop()" class="easyui-linkbutton">开始部署</a>		
+			<a href="javascript:" onclick="treeDataTool.changeDeployop(1)" class="easyui-linkbutton">转到下阶段</a>
+			<a href="javascript:" onclick="treeDataTool.changeDeployop(-1)" class="easyui-linkbutton">回退上阶段</a>
+		&nbsp;&nbsp;&nbsp;&nbsp;部署参数<input id='deployarg'>
+		<a href="javascript:" onclick="treeDataTool.startDeployop()" class="easyui-linkbutton">开始部署</a>	
 				</td></tr>
 		</table>
 
 	</div>
 	
 	<div data-options="region:'center'">
-		<div class="easyui-panel" data-options="multiple:true"
-			style="background: #f5f5f5; width: 100%">
-			<div id="envCondition">
-				<input id='condproject' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="项目"/>
-				<input id='condversion' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="版本"/>
-				<input id='condbranch' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="分支"/>
-				<input id='condphase'/>
-			</div>
+		<div class="easyui-panel" data-options="multiple:true" style="background: #f5f5f5; width: 100%">
+			<a href="javascript:" onclick='treeDataTool.showTreeData(1);treeTool.warnSelectRoot()' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增提测</a>&nbsp;&nbsp;
+			<input id='condproject' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="项目"/>
+			<input id='condversion' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="版本"/>
+			<input id='condbranch' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="分支"/>
+			<input id='condphase'/>
+			<input id='condRelative'/>
 		</div>
 		
 		<div data-options="multiple:true">
@@ -152,8 +144,9 @@ treeDataTool = {
 		var version    = $('#condversion').val()
 		var branch    = $('#condbranch').val()
 		var phase   = $("#condphase").combobox("getValue")
+		var isRelativeOwner = $("#condRelative").combobox("getValue")==1
 
-		var datas = CTestPlanAPi.getDeploy(project,version,branch,phase, fnid, nid1, nid2)
+		var datas = CTestPlanAPi.getDeploy(project,version,branch,phase, fnid, nid1, nid2, isRelativeOwner)
 		var dataCols = [
 			{ field : 'procode', title : '子系统/project' },
 			{ field : 'version', title : '版本'},
@@ -164,7 +157,7 @@ treeDataTool = {
 			{ field : 'creattime', title : '提测时间'},
 			{ field : 'pendtime', title : '计划发布'},
 	
-			{ field : 'owner', title : '负责人'},
+			{ field : 'owner', title : '主测人'},
 			{ field : 'phase', title : '部署阶段', formatter : function(value, row, index) {
 				try{
 					return deployPhases[value]['n']
@@ -174,20 +167,20 @@ treeDataTool = {
 				try{
 					var s= deployStatuses[value]['n']
 				}catch(e){return value}
-				if(value==1) s+= '&nbsp; <a href="javascript:void(0)" onclick="treeDataTool.refreshDeployop(' + row.deployid +')">刷新</a>'
+				if(value==1) s+= '&nbsp; <a href="javascript:" onclick="treeDataTool.refreshDeployop(' + row.deployid +')">刷新</a>'
 				return s;
 			}},
 			{ field : 'modifytime', title : '最近部署', formatter : function(value, row, index) {
 				if(row.deploytimes>0){
-					return value + '&nbsp; <a href="javascript:void(0)" onclick="alert(' + row.deployid +')">共'+row.deploytimes+'次</a>'
+					return value + '&nbsp; <a href="javascript:" onclick="alert(' + row.deployid +')">共'+row.deploytimes+'次</a>'
 				} 
 			}},
 			
 			{ field : 'deployid', title: '操作', formatter : function(value, row, index) {
 				return [
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 3)">提测部署</a>',
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 3)">部署</a>',
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
 				].join("&nbsp;")
 			}},
 			{ field : 'remark', title : '备注', formatter : function(value, row, index) {
@@ -219,6 +212,7 @@ treeDataTool = {
 		var tdata = treeTool.getDataByName($('#treedatalist').datagrid('getData'), 'deployid', value)
 		if (isNew){
 			$("#procode").combobox("setValue", "")
+			remark.value = treeTool.cdeployTemplate
 		}	
 		else if (tdata) {
 			$("#version").combobox("setValue", tdata.version)
@@ -259,7 +253,6 @@ treeDataTool = {
 	},
 	
 	showDeployop : function(value) {
-	
 		$('#deployop').dialog('open')
 		var tdata = treeTool.getDataByName($('#treedatalist').datagrid('getData'), 'deployid', value)
 		treeTool.deploy = tdata
@@ -272,10 +265,16 @@ treeDataTool = {
 		if(treeTool.deploy){
 			var chowner = ischangeowner?$("#nextowner").combobox("getValue"):undefined
 			chstatus = CTestPlanAPi.changeDeployflow(treeTool.deploy.deployid, nextInt, chowner)
-			if(chstatus[0]>=2)$.messager.show({title:'部署管理', msg:chstatus[1], timeout:2000,
+			if(chstatus[0]>=2){
+				$.messager.show({title:'部署管理', msg:chstatus[1], timeout:2000,
 				style:{ right:'', top:100, bottom:'' }})
+				return
+			}
+			
+			treeTool.deploy.phase = parseInt(treeTool.deploy.phase)+nextInt
+			var p = deployPhases[treeTool.deploy.phase];
+			if(p)$("#phase").val(p['n'])
 			treeDataTool.loadTreeDataList()
-			$('#deployop').dialog('close')
 		}
 	},
 	startDeployop: function(){
@@ -294,10 +293,14 @@ treeTool.initTree();
 
 +function(){
 	$('#version').combobox({data: CTestPlanAPi.getVersion(), 
-		width:'80px',valueField:'cname', textField:'cname', value:""});
+		width:'140px',valueField:'cname', textField:'cname', value:""});
 
 	$('#condphase').combobox({data: deployPhases.concat({n:'非已完成',v:9}),value:9, width:'80px',valueField:'v',
 		textField:'n',onChange: function(){
+		treeDataTool.loadTreeDataList()
+	}});
+	$('#condRelative').combobox({data: [{n:'与我相关',v:1}, {n:'所有Owner',v:2}], 
+		width:'80px',valueField:'v', textField:'n', value:1, onChange: function(){
 		treeDataTool.loadTreeDataList()
 	}});
 
@@ -312,6 +315,12 @@ treeTool.initTree();
 		width:'80px',valueField:'calias', textField:'calias', value:""});
 	$('#notifyer').combobox({data: allowners, multiple:true, 
 		width:'400px',valueField:'calias', textField:'calias', value:""});
+
+	if(!treeTool.cdeployTemplate){
+		var ts = CTestPlanAPi.getPlanTemplate("submitVersion")
+		if(ts[0])
+			treeTool.cdeployTemplate = ts[0].ccontent
+	}
 }();
 
 </script>

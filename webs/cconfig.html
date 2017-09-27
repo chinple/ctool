@@ -68,7 +68,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		data-options="iconCls:'icon-save',closable:true,closed:true"
 		style="width: 550px; padding: 10px;">
 		<input id='treeName' size=50 />&nbsp;&nbsp; <input type='checkbox'
-			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="#"
+			id='isRootTree'>根目录&nbsp;&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeTool.saveTreeNode()" class="easyui-linkbutton">保存目录</a>
 	</div>
 
@@ -97,15 +97,14 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 			<tr><td>内容 </td> <td> <textarea id='ccontent' cols=100 rows=10></textarea> </td></tr>
 		</table>
 		
-		<br><a href="#" onclick="treeDataTool.saveTreeData(1)"
-			class="easyui-linkbutton"> 保存并关闭</a>&nbsp;&nbsp;&nbsp; <a href="#"
+		<br><a href="javascript:" onclick="treeDataTool.saveTreeData(1)"
+			class="easyui-linkbutton"> 保存并关闭</a>&nbsp;&nbsp;&nbsp; <a href="javascript:"
 			onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">保存并添加</a>
 	</div>
 	
 	<div data-options="region:'center'">
-		<div class="easyui-panel" data-options="multiple:true"
-			style="background: #f5f5f5; width: 100%">
-			<div id="caseCondition">
+		<div class="easyui-panel" data-options="multiple:true" style="background: #f5f5f5; width: 100%">
+			<a href="javascript:" onclick='treeDataTool.showTreeData(1);treeTool.warnSelectRoot()' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增配置</a>&nbsp;&nbsp;
 				主题<input id='condSubject' size=20 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/> 
 				&nbsp;名称<input id='condCname' size=29 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/>
 				&nbsp;标签 <input id='condCkey' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/> 
@@ -117,7 +116,6 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 					<option value='3'>文件</option>
 					<option value='4'>其他</option>
 				</select>
-			</div>
 		</div>
 
 		<div data-options="multiple:true">
@@ -161,8 +159,8 @@ treeDataTool = {
 		  { field : 'modifytime',title : '修改时间',width : 120},
 		  { field : 'configid',title : '操作',formatter : function(value, row, index) {
 			return [
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
-					'<a href="javascript:void(0)" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
+					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
 				].join("&nbsp;")
 		  }},
 		  { field : 'stype',title : '类型',formatter : function(value, row, index) {
