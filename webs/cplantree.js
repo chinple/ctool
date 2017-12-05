@@ -15,6 +15,7 @@ treeTool = {
 	isNew : true,
 	nid : -1,
 	isInitTree: false,
+	datas:null,
 	getTreeNodeData : function(fnid) {
 		var nodesData = CTestPlanAPi.getCtreeRoot(fnid)
 		for ( var i in nodesData) {
@@ -157,7 +158,33 @@ treeTool = {
 				}
 			}
 	},
-	
+	getDataById: function(idname, idvalue){
+		for (var i = 0; i < treeTool.datas.length; i += 1) {
+			if (parseInt(treeTool.datas[i][idname]) == parseInt(idvalue)){
+				return treeTool.datas[i]
+			}
+		}
+	},
+	showTips: function(tipNames, tipSize, idname, contentHandler){
+		$(tipNames).tooltip({
+			content: $('<div></div>'),
+			showEvent: 'click',
+			position: 'right',
+			onUpdate: function(content){
+				var data = treeTool.getDataById(idname,($(this)).context.id);
+				content.panel({
+					width: tipSize,
+					border: false,
+					content:$('<div><pre>'+contentHandler(data)+'</pre></div>')
+				});
+			}, onShow: function(){
+				t = $(this);
+				t.tooltip('tip').unbind().bind('mouseleave', function(){
+					t.tooltip('hide');
+				});
+			}
+		});
+	},
 	getLoadDataJson: function(dataCols, datas,pageSize){
 		return {
 			columns : [ dataCols ],

@@ -26,6 +26,9 @@ class CserviceDataApi:
         return self.servers.getRecord("ctool-server")
 
     def saveInfData(self, infName, argInfo, requestArgs, argRely=None, timeMark=None, respData=None):
+        if timeMark is None:
+            timeMark = str(time.time())
+
         return self.datas.saveRecord(infName, {"a":requestArgs, "i":argInfo,
             "r":argRely, "d":respData, "t":str(timeMark)}, isUpdate=True, isFlush=True)
 
@@ -80,8 +83,6 @@ class CServiceTool:
         ignoreArgs = toJsonObj(ignoreArgs)
         argRely = toJsonObj(argRely)
 
-        if timeMark is None:
-            timeMark = str(time.time())
         return self.dapi.saveInfData(infName, argInfo, requestArgs, argRely, timeMark)
 
     def searchInfData(self, infName, infCond={}):
@@ -190,7 +191,7 @@ class ProxyMockTool:
                 ps.append({'i':p['i'], 'p':p['a']['proxyConfig'], 't':p['t']})
         return ps
 
-    def addProxy(self, mockaddr, info, proxy, timeMark):
+    def addProxy(self, mockaddr, info, proxy, timeMark=None):
         curlCservice(mockaddr, 'LogHttpProxy/reloadProxyConfig', isCheckResp=True, proxyConfig=proxy)
         return self.dapi.saveInfData("LogHttpProxy.reloadProxyConfig", info, {'proxyConfig':proxy}, timeMark=timeMark)
 

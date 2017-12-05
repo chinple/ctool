@@ -77,45 +77,40 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 	<div id="treedataadd" class="easyui-dialog" title="测试计划"
 		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
 		style="padding: 10px;">
-		目的: &nbsp;&nbsp;&nbsp;&nbsp;<input id='planName' size=84>&nbsp;&nbsp;
-		<select id='ptype'> <option value='版本测试'>版本测试</option> <option value='自动化测试'>自动化测试</option> <option value='专项测试'>专项测试</option> <option value='日常计划'>日常计划</option>
-			   </select>&nbsp;&nbsp; 
-			   <select id='planStatus'>
+	<table>
+		<tr><td>目的</td><td>
+
+		<input id='planName' size=50>&nbsp;&nbsp;
+		项目 <input id='planTags' size=10 />&nbsp;&nbsp;
+	</td><td>
+		<select id='ptype'> <option value='版本测试'>版本测试</option> <option value='自动化测试'>自动化测试</option> <option value='专项测试'>专项测试</option> <option value='日常计划'>日常计划</option> </select>
+		</td></tr>
+		<tr><td>计划</td><td>
+			<input id='planVersion' size=10 />&nbsp;&nbsp; 
+		参与人 <input id='planOwner'/>
+	</td><td>
+		<select	id='planPriority'><option value='P0'>P0</option>
+			<option value='P1'>P1</option>
+			<option value='P2'>P2</option></select>
+		</td></tr>
+	
+	<tr><td></td><td>计划时间 <input id='pstarttime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />~<input id='pendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
+		&nbsp;&nbsp; 
+		实际时间<input id='starttime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />~<input id='endtime' class="easyui-datebox"——data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
+	</td><td>
+		<select id='planStatus'>
 			<option value='2'>已创建</option>
 			<option value='0'>有风险</option>
 			<option value='1'>进行中</option>
 			<option value='3'>已经完成</option>
 			<option value='4'>暂停</option>
-		</select>
-		<br>
-		版本: &nbsp;&nbsp;&nbsp;&nbsp;
-		<input id='planVersion' size=10 />&nbsp;&nbsp;
-		项目<input id='planTags' size=30 />&nbsp;&nbsp;
-		参与人<input id='planOwner' size=50 />
-		<br><br>
-		计划: &nbsp;&nbsp;&nbsp;&nbsp;
-		<select
-			id='planPriority'><option value='P0'>P0</option>
-			<option value='P1'>P1</option>
-			<option value='P2'>P2</option></select>
-		&nbsp;&nbsp; 
-		计划开始时间<input
-			id='pstarttime' class="easyui-datebox"
-			data-options="formatter:myformatter,parser:myparser"
-			style="width: 100px" /> 
-		~结束时间<input id='pendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
-		&nbsp;&nbsp; 
-		实际开始时间<input id='starttime'
-			class="easyui-datebox"
-			data-options="formatter:myformatter,parser:myparser"
-			style="width: 100px" /> ~结束时间<input id='endtime'
-			class="easyui-datebox"
-			data-options="formatter:myformatter,parser:myparser"
-			style="width: 100px" /> <br>
-		详情: &nbsp;&nbsp;&nbsp;&nbsp;<textarea id='planSummary' rows=6 cols=120></textarea><br>
-		风险: &nbsp;&nbsp;&nbsp;&nbsp;<textarea id='planIssues' rows=6 cols=120></textarea><br><br>
-		<a href="javascript:"
-			onclick="treeDataTool.saveTreeData(1)" class="easyui-linkbutton">保存并关闭</a>&nbsp;&nbsp;&nbsp;
+		</select></td></tr>
+
+		<tr><td>详情</td><td colspan=2><textarea id='planSummary' rows=6 cols=90></textarea></td></tr>
+		<tr><td>风险</td><td colspan=2><textarea id='planIssues' rows=6 cols=90></textarea></td></tr>
+	</table>
+	
+		<a href="javascript:" onclick="treeDataTool.saveTreeData(1)" class="easyui-linkbutton">保存并关闭</a>&nbsp;&nbsp;&nbsp;
 		<a href="javascript:" onclick="treeDataTool.saveTreeData(0)" class="easyui-linkbutton">保存并添加</a>
 	</div>
 	
@@ -127,11 +122,13 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 			<input id='condptype'/>
 			<input id='condplanPriority'/>
 			<input id='condplanStatus'/>
+			
+			<input id='condstarttime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />~
+			<input id='condendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
 		</div>
 
 		<div data-options="multiple:true">
-			<table id='treedatalist' 
-				data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>
+			<table id='treedatalist' data-options='singleSelect:true,rownumbers:true,pagination:true,pageSize:20'></table>
 		</div>
 	</div>
 	
@@ -194,8 +191,10 @@ treeDataTool = {
 			inStatus=undefined
 			outStatus='3'
 		}
+		var cstarttime = $('#condstarttime').datebox("getValue")
+		var cendtime = $('#condendtime').datebox("getValue")
 
-		var datas = CTestPlanAPi.getCtestplan(treeTool.tree.nid, nid1, nid2, nameOrTags, ptype, priority, inStatus, outStatus)
+		var datas = CTestPlanAPi.getCtestplan(treeTool.tree.nid, nid1, nid2, nameOrTags, ptype, priority, inStatus, outStatus,cstarttime,cendtime)
 		var dataCols = [
 			{ field : 'name',title : '项目-版本计划',width: 280, formatter : function(value, row, index) {
 				var tags = row.tags?("【"+row.tags+"】"):"";
@@ -373,7 +372,7 @@ treeTool.initTree();
 
 	var allowners = AuthApi.getOwners();
 	$('#planOwner').combobox({data: allowners, multiple:true,
-		width:'290px',valueField:'calias', textField:'calias', value:""});
+		width:'310px',valueField:'calias', textField:'calias', value:""});
 
 }();
 

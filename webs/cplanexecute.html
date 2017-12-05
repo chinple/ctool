@@ -315,7 +315,9 @@ planTool = {
 
 		var respVal = CTestPlanAPi.getPlancase(condition.planid,status,owner,scenarioName,caseName)
 		var respColumns =[
-		    {field:'tags',title:'目录'},{field:'scenario',title:'测试场景'},
+		    {field:'tags',title:'目录'},{field:'scenario',title:'测试场景', formatter : function(value, row, index) {
+			return '<label class="show-content" id="'+row.caseid+'">'+value+"</label>"
+		  }},
 			{field:'name',title:'用例描述',width:"40%"},
 			{field:'status',title:'结果',
 				formatter:function(value, row, index){
@@ -354,6 +356,10 @@ planTool = {
 			data.rows = (data.originalRows.slice(start, end));
 			return data;
 		}})
+	   treeTool.datas = respVal;
+		treeTool.showTips('[class="show-content"]',400, 'caseid', function(data){
+			return "用例："+data.name+"\n"+data.remark
+		})
 	},
 	saveDaily: function(isSendMail){
 		var day = $("#dailyDay").val()

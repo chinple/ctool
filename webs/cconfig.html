@@ -107,8 +107,14 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 			<a href="javascript:" onclick='treeDataTool.showTreeData(1);treeTool.warnSelectRoot()' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增配置</a>&nbsp;&nbsp;
 				主题<input id='condSubject' size=20 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/> 
 				&nbsp;名称<input id='condCname' size=29 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/>
-				&nbsp;标签 <input id='condCkey' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/> 
-		
+				&nbsp;标签 <input id='condCkey' size=30 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()"/>
+
+				<select id='condStatus' onchange='treeDataTool.loadTreeDataList()'>
+					<option value='1'>生效</option>
+					<option value='0'>下线</option>
+					<option value=''>所有</option>
+				</select>
+
 				<select id='condStype' onchange='treeDataTool.loadTreeDataList()'>
 					<option value=''>所有类型</option>
 					<option value='1'>字符串</option>
@@ -143,7 +149,7 @@ treeDataTool = {
 		var cname = $('#condCname').val()
 		var ckey = $('#condCkey').val()
 
-		var cdatas = CTestPlanAPi.getTestConfig(subject,stype,cname,ckey,treeSelected.nid,nid1,nid2)
+		var cdatas = CTestPlanAPi.getTestConfig(subject,stype,cname,ckey,treeSelected.nid,nid1,nid2,condStatus.value)
 		treeDataTool.fileLink = cdatas['fileLink']
 		var datas = cdatas['data']
 

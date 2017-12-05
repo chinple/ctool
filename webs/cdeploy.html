@@ -109,11 +109,12 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 	<div data-options="region:'center'">
 		<div class="easyui-panel" data-options="multiple:true" style="background: #f5f5f5; width: 100%">
 			<a href="javascript:" onclick='treeDataTool.showTreeData(1);treeTool.warnSelectRoot()' class="easyui-linkbutton" data-options="iconCls:'icon-add'">新增提测</a>&nbsp;&nbsp;
-			<input id='condproject' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="项目"/>
-			<input id='condversion' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="版本"/>
-			<input id='condbranch' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="分支"/>
+			<input id='condbranchversion' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="版本或分支"/>
+			<input id='condprojectremark' onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="项目或备注"/>
+			<input id='condowner' size=6 onkeypress="if(event.keyCode==13) treeDataTool.loadTreeDataList()" placeholder="相关人"/>
 			<input id='condphase'/>
-			<input id='condRelative'/>
+			<input id='condstarttime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />~
+			<input id='condendtime' class="easyui-datebox" data-options="formatter:myformatter,parser:myparser" style="width: 100px" />
 		</div>
 		
 		<div data-options="multiple:true">
@@ -140,15 +141,18 @@ treeDataTool = {
 		else if(treeSelected.tlayer==2)
 			nid2 = treeSelected.nid
 
-		var project = $('#condproject').val()
-		var version    = $('#condversion').val()
-		var branch    = $('#condbranch').val()
+		var branchversion = $('#condbranchversion').val()
+		var projectremark    = $('#condprojectremark').val()
 		var phase   = $("#condphase").combobox("getValue")
-		var isRelativeOwner = $("#condRelative").combobox("getValue")==1
+		var creator    = $('#condowner').val()
+		var cstarttime = $('#condstarttime').datebox("getValue")
+		var cendtime = $('#condendtime').datebox("getValue")
 
-		var datas = CTestPlanAPi.getDeploy(project,version,branch,phase, fnid, nid1, nid2, isRelativeOwner)
+		var datas = CTestPlanAPi.getDeploy(branchversion, projectremark, phase, creator, fnid, nid1, nid2, cstarttime, cendtime)
 		var dataCols = [
-			{ field : 'procode', title : '子系统/project' },
+			{ field : 'procode', title : '子系统/project' , formatter : function(value, row, index) {
+			return '<label class="show-content" id="'+row.deployid+'">'+value+"</label>"
+		  }},
 			{ field : 'version', title : '版本'},
 			//{ field : 'proname', title : '描述' },
 			//{ field : 'protype', title : '类型' },
@@ -189,6 +193,10 @@ treeDataTool = {
 		]
 
 		$('#treedatalist').datagrid( treeTool.getLoadDataJson(dataCols, datas))
+		treeTool.datas = datas;
+		treeTool.showTips('[class="show-content"]',800, 'deployid', function(data){
+			return data.remark
+		})
 	},
 
 	operateTreeData : function(value, opType) {
@@ -217,6 +225,7 @@ treeDataTool = {
 		else if (tdata) {
 			$("#version").combobox("setValue", tdata.version)
 			$("#procode").combobox("setValue", tdata.procode)
+			$("#procode").combobox("setText", tdata.procode)
 			$("#branch").val(tdata.branch)
 			$("#pendtime").datebox("setValue", tdata.pendtime)
 			$("#owner").combobox("setValue", tdata.owner)
@@ -233,6 +242,7 @@ treeDataTool = {
 
 		var version = $("#version").combobox("getValue")
 		var procode = $("#procode").combobox("getValue")
+		if(procode=="")procode=$("#procode").combobox("getText")
 		var branch = $("#branch").val()//combobox("getValue")
 		var pendtime = $("#pendtime").datebox("getValue")
 		var owner = $("#owner").combobox("getValue")
@@ -321,6 +331,7 @@ treeTool.initTree();
 		if(ts[0])
 			treeTool.cdeployTemplate = ts[0].ccontent
 	}
+	condowner.value = AuthApi.getLoginInfo().name
 }();
 
 </script>

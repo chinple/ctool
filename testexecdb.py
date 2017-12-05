@@ -46,27 +46,23 @@ class CtestDbOp:
             "fnid":fnid, "nid1":nid1, "nid2":nid2, "caseid":caseid})
         sql.appendWhere("caseid", caseid)
         return sql.execute()
+    
+    def changeCaseOindex(self):
+        self.sqlConn.executeSql('update testcase set testcase.oindex=testcase.caseid where testcase.oindex=0')
+        pass
 
     def getCtestcase(self, fnid=None, nid1=None, nid2=None,
             searchKey=None, ttype=None, priority=None, name=None, owner=None, planid=None, caseid=None, isInplan=True):
         sql = self.sqlConn.getSql("testcase", Sql.select, True)
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
+        sql.startCondition().appendWhere('fnid', fnid, isAnd=False).appendWhere('nid1', nid1, isAnd=False).appendWhere('nid2', nid2, isAnd=False).endCondition()
 
         sql.appendWhereByJson({'name':name, "ttype":ttype, "priority":priority,
             "owner":owner, "caseid":caseid})
         if not Sql.isEmpty(planid):
-            sql.appendCondition("caseid %s in (select caseid from plancase where planid=%s)" % ("" if isInplan else "not", planid))
+            sql.appendCondition("caseid %s in (select caseid from plancase where planid=%s)", ("" if isInplan else "not", planid))
         if not Sql.isEmpty(searchKey):
             searchKey = '%%%s%%' % searchKey
-            sql.appendCondition("(name like '%s' or tags like '%s'or scenario like '%s')" % (searchKey, searchKey, searchKey))
+            sql.appendCondition("(name like '%s' or tags like '%s'or scenario like '%s')", (searchKey, searchKey, searchKey))
         sql.orderBy("scenario,tags")
         return sql.execute()
 
@@ -112,24 +108,26 @@ class CtestDbOp:
         sql.appendWhere("planid", planid)
         return sql.execute()
 
+    def _makeTimeBetween(self, sql, cstarttime, cendtime, sqlStart, sqlEnd):
+        if not Sql.isEmpty(cstarttime):
+            if not Sql.isEmpty(cendtime):
+                sql.appendCondition("(({0}<='%s' and '%s'<={1}) or ({0}<='%s' and '%s'<={1}) or ('%s'<={0} and {0}<='%s'))".format(sqlStart, sqlEnd), \
+                    (cstarttime, cstarttime, cendtime, cendtime, cstarttime, cendtime))
+            else:
+                sql.appendCondition("(%s>='%s')", (sqlEnd, cstarttime))
+        elif not Sql.isEmpty(cendtime):
+            sql.appendCondition("(%s<='%s')", (sqlStart, cendtime))
+
     def getCtestplan(self, fnid=None, nid1=None, nid2=None,
             nameOrTags=None, ptype=None, priority=None, inStatus=None, outStatus=None,
-            starttime1=None, starttime2=None, owner=None, name=None, tags=None, planid=None):
+            cstarttime=None, cendtime=None, owner=None, name=None, tags=None, planid=None):
         sql = self.sqlConn.getSql("testplan", Sql.select, True)
 
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
+        sql.startCondition().appendWhere('fnid', fnid, isAnd=False).appendWhere('nid1', nid1, isAnd=False).appendWhere('nid2', nid2, isAnd=False).endCondition()
 
         if not Sql.isEmpty(nameOrTags):
             nameOrTags = '%%%s%%' % nameOrTags
-            sql.appendCondition("(name like '%s' or tags like '%s' or owner like '%s')" % (nameOrTags, nameOrTags, nameOrTags))
+            sql.appendCondition("(name like '%s' or tags like '%s' or owner like '%s')" , (nameOrTags, nameOrTags, nameOrTags))
         if not Sql.isEmpty(name):
             name = '%%%s%%' % name
             sql.appendWhere('name', name, 'like')
@@ -140,7 +138,7 @@ class CtestDbOp:
         sql.appendWhereByJson({"owner":owner, 'priority':priority, 'status':inStatus, "planid":planid})
         sql.appendWhere('ptype', ptype, 'in')
         sql.appendWhere('status', outStatus, '!=')
-        sql.appendWhere("starttime", starttime1, ">=").appendWhere("starttime", starttime2, "<")
+        self._makeTimeBetween(sql, cstarttime, cendtime, "pstarttime", "pendtime")
 
         sql.orderBy("status,pendtime,priority,ptype,fnid desc,tags,name")
         return sql.execute()
@@ -181,14 +179,14 @@ class CtestDbOp:
 
         if not Sql.isEmpty(owner):
             owner = '%%%s%%' % owner
-            sql.appendCondition("(owner like '%s')" % (owner))
+            sql.appendCondition("(owner like '%s')", (owner,))
 
         if not Sql.isEmpty(scenarioName):
             caseTags = '%%%s%%' % scenarioName
-            sql.appendCondition("(tags like '%s' or scenario like '%s')" % (caseTags, caseTags))
+            sql.appendCondition("(tags like '%s' or scenario like '%s')" , (caseTags, caseTags))
         if not Sql.isEmpty(caseName):
             caseName = '%%%s%%' % caseName
-            sql.appendCondition("(name like '%s')" % caseName)
+            sql.appendCondition("(name like '%s')" , (caseName,))
 
         sql.orderBy('tags,scenario,caseid')
         return sql.execute()
@@ -226,23 +224,15 @@ class CtestDbOp:
         sql.appendWhereByJson({'hostip': hostip,
             'owner':owner, 'ownerStatus': ownerStatus})
 
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
+        sql.startCondition().appendWhere('fnid', fnid, isAnd=False).appendWhere('nid1', nid1, isAnd=False).appendWhere('nid2', nid2, isAnd=False).endCondition()
 
         if not Sql.isEmpty(vmaccount):
             vmaccount = '%%%s%%' % vmaccount
-            sql.appendCondition("(vmaccount like '%s')" % (vmaccount))
+            sql.appendCondition("(vmaccount like '%s')", (vmaccount,))
 
         if not Sql.isEmpty(envname):
             envname = '%%%s%%' % envname
-            sql.appendCondition("(envname like '%s' or tags like '%s')" % (envname, envname))
+            sql.appendCondition("(envname like '%s' or tags like '%s')", (envname, envname))
         # 'vmammounts': vmammounts
         # 'ownerStartTime': ownerStartTime, 'ownerEndTime': ownerEndTime,
         sql.appendWhere("testenvid", testenvid)
@@ -272,27 +262,19 @@ class CtestDbOp:
         sql = self.sqlConn.getSql("cconfig", Sql.select, True, fields)
         sql.appendWhereByJson({'configid': configid, 'stype':stype, 'status':status})
 
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
+        sql.startCondition().appendWhere('fnid', fnid, isAnd=False).appendWhere('nid1', nid1, isAnd=False).appendWhere('nid2', nid2, isAnd=False).endCondition()
 
         if not Sql.isEmpty(subject):
             subject = '%%%s%%' % subject
-            sql.appendCondition("(subject like '%s')" % (subject))
+            sql.appendCondition("(subject like '%s')", (subject,))
 
         if not Sql.isEmpty(cname):
             cname = '%%%s%%' % cname
-            sql.appendCondition("(cname like '%s' or calias like '%s')" % (cname, cname))
+            sql.appendCondition("(cname like '%s' or calias like '%s')", (cname, cname))
 
         if not Sql.isEmpty(ckey):
             ckey = '%%%s%%' % ckey
-            sql.appendCondition("(ckey like '%s')" % (ckey))
+            sql.appendCondition("(ckey like '%s')", (ckey,))
         sql.orderBy("subject,ckey,cname")
         return sql.execute()
 
@@ -329,32 +311,26 @@ class CtestDbOp:
         sql.appendWhere("deployid", deployid)
         return sql.execute()
 
-    def getCdeploy(self, project=None, version=None, branch=None, phase=None,
-            creator=None,  fnid=None, nid1=None, nid2=None, deployid=None):
+    def getCdeploy(self, branchversion=None, projectremark=None, phase=None,
+            creator=None, fnid=None, nid1=None, nid2=None, cstarttime=None, cendtime=None, deployid=None):
         sql = self.sqlConn.getSql("cdeploy", Sql.select, True)
-        sql.appendWhereByJson({'deployid': deployid, 'version':version})
+        sql.appendWhereByJson({'deployid': deployid})
         if phase == '9':
             sql.appendWhere("phase", 4, "!=")
         else:
             sql.appendWhere("phase", phase)
 
-        conditions = []
-        if not Sql.isEmpty(fnid):
-            conditions.append('fnid = %s' % fnid)
-        if not Sql.isEmpty(nid1):
-            conditions.append('nid1 = %s' % nid1)
-        if not Sql.isEmpty(nid2):
-            conditions.append('nid2 = %s' % nid2)
-        if len(conditions) > 0:
-            sql.appendCondition("(%s)" % (" or ".join(conditions)))
-        if creator is not None:sql.appendCondition("(creator='%s' or owner='%s' or notifyer like '%%%s%%')" % (creator, creator, creator))
+        sql.startCondition().appendWhere('fnid', fnid, isAnd=False).appendWhere('nid1', nid1, isAnd=False).appendWhere('nid2', nid2, isAnd=False).endCondition()
+    
+        if creator is not None:sql.appendCondition("(creator='%s' or owner='%s' or notifyer like '%%%s%%')", (creator, creator, creator))
 
-        if not Sql.isEmpty(project):
-            project = '%%%s%%' % project
-            sql.appendCondition("(procode like '%s' or proname like '%s')" % (project, project))
-        if not Sql.isEmpty(branch):
-            branch = '%%%s%%' % branch
-            sql.appendCondition("( branch like '%s')" % branch)
+        if not Sql.isEmpty(branchversion):
+            branchversion = '%%%s%%' % branchversion
+            sql.appendCondition("(branch like '%s' or version like '%s')" , (branchversion, branchversion))
+        if not Sql.isEmpty(projectremark):
+            projectremark = '%%%s%%' % projectremark
+            sql.appendCondition("(procode like '%s' or remark like '%s')" , (projectremark, projectremark))
+        self._makeTimeBetween(sql, cstarttime, cendtime, "creattime", "pendtime")
 
         sql.orderBy("version,procode")
         return sql.execute()

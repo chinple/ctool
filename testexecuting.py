@@ -89,8 +89,8 @@ class CTestPlanAPi:
 
     def getCtestplan(self, fnid=None, nid1=None, nid2=None,
             nameOrTags=None, ptype=None, priority=None, inStatus=None, outStatus=None,
-            starttime1=None, starttime2=None, owner=None):
-        return self.dbapi.getCtestplan(fnid, nid1, nid2, nameOrTags, ptype, priority, inStatus, outStatus, starttime1, starttime2, owner)
+            cstarttime=None, cendtime=None, owner=None):
+        return self.dbapi.getCtestplan(fnid, nid1, nid2, nameOrTags, ptype, priority, inStatus, outStatus, cstarttime, cendtime, owner)
 
     def getCtestplanById(self, planid):
         if Sql.isEmpty(planid):
@@ -299,8 +299,8 @@ class CTestPlanAPi:
         return self.dbapi.saveTestEnv(envname, tags, hostip, hostaccount, hostinfo, vmaccount, vmammounts, vminfo, owner, ownerStatus, ownerInfo, ownerStartTime, ownerEndTime, fnid, nid1, nid2, testenvid)
 
 # test config
-    def getTestConfig(self, subject=None, stype=None, cname=None, ckey=None, fnid=None, nid1=None, nid2=None, configid=None):
-        return {'fileLink':cprop.getVal('cconfig', 'fileLink'), 'data':self.dbapi.getTestConfig(subject, stype, cname, ckey, fnid, nid1, nid2, configid)}
+    def getTestConfig(self, subject=None, stype=None, cname=None, ckey=None, fnid=None, nid1=None, nid2=None, status=None, configid=None):
+        return {'fileLink':cprop.getVal('cconfig', 'fileLink'), 'data':self.dbapi.getTestConfig(subject, stype, cname, ckey, fnid, nid1, nid2, status=status, configid=configid)}
 
     def getPlanTemplate(self, cname):
         return self.dbapi.getTestConfig("plan", ckey="template", cname=cname, status=1, fields="ccontent")
@@ -334,10 +334,9 @@ class CTestPlanAPi:
         return self.dbapi.saveCdeploy(version, procode, proname, protype, branch, brancharg, pendtime,
             creator, owner, notifyer, remark, fnid, nid1, nid2, phase, status, deployarg, deployid=deployid)
 
-    def getDeploy(self, project=None, version=None, branch=None, phase=None,
-            fnid=None, nid1=None, nid2=None, isRelativeOwner="false", __session__=None):
-        creator = __session__['name'] if str(isRelativeOwner).lower() == "true" else None
-        return self.dbapi.getCdeploy(project, version, branch, phase, creator, fnid, nid1, nid2)
+    def getDeploy(self, planversion=None, projectremark=None, phase=None, creator=None,
+            fnid=None, nid1=None, nid2=None, cstarttime=None, cendtime=None):
+        return self.dbapi.getCdeploy(planversion, projectremark, phase, creator, fnid, nid1, nid2, cstarttime, cendtime)
 
     def deleteDeploy(self, deployid, __session__=None):
         creator = None if __session__['admin'] else  __session__['name'] 
@@ -406,7 +405,11 @@ class AuthApi(LocalMemSessionHandler):
         pros = self.dbapi.getTestConfig("plan", ckey="owner", status=1, fields="cname as info,calias")
         return pros
 
+    specReg = '.*[()\'";]'
     def registerOwner(self, cname, calias, email=None, passwd=None):
+        import re
+        if re.match(self.specReg, cname) or re.match(self.specReg, calias):
+            raise Exception("Bad name")
         owners = self.dbapi.getTestConfig(subject="plan", ckey="owner", cname=cname)
         if len(owners) > 0:
             raise Exception("Already exist")
@@ -456,4 +459,4 @@ class AuthApi(LocalMemSessionHandler):
 if __name__ == "__main__":
     from cserver import servering
     cprop.load("cplan.ini")
-    servering("-p 8089 -f webs  -m cplan.html  -t testoolplatform.py -t testtoolcenter.py")
+    servering("-p 8089 -f webs  -m cplan.html  -t testtoolplatform.py -t testtoolcenter.py")

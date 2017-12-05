@@ -78,20 +78,19 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 		data-options="iconCls:'icon-save',closable:true,closed:true,modal:true"
 		style="padding: 10px;">
 		<table>
-			<tr><td>测试场景：</td> <td> <input id='scenario' size=40> 
-			类别：<select id='ttype'> <option value='manual'>manual</option> <option value='auto'>auto</option> <option value='下线'>下线</option> </select>
-			优先级：<select
+			<tr><td>测试场景 </td> <td> <input id='scenario' size=26> 
+			类别 <select id='ttype'> <option value='manual'>manual</option> <option value='auto'>auto</option> <option value='下线'>下线</option> </select>
+			优先级 <select
 			id='priority'><option value='P0'>P0</option>
 			<option value='P1'>P1</option>
 			<option value='P2'>P2</option></select> 
-			标签：<input id='tags' size=27/> 
+			标签 <input id='tags' size=20 /> 
 			</td></tr>
 			
 			<tr><td colspan=2> <br> </td></tr>
 			
-			<tr><td>用例/<br>测试要点</td> <td><textarea id='caseName' cols=110></textarea> </td></tr>
-			<tr><td>备注：</td> <td> <textarea id='caseRemark' cols=110 rows=4></textarea> </td></tr>
-			
+			<tr><td>测试要点</td> <td><textarea id='caseName' cols=90></textarea> </td></tr>
+			<tr><td>备注/详情</td> <td> <textarea id='caseRemark' cols=90 rows=8></textarea> </td></tr>
 		</table>
 		
 		<br><a href="javascript:" onclick="treeDataTool.saveTreeData(1)"
@@ -117,6 +116,7 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 </body>
 
 <script type="text/javascript">
+caseTemplate = '【前提】\n  \n【步骤】\n  \n【期望】\n  '
 treeTool.treeRootId = 2
 treeDataTool = {
 	// tree datas 
@@ -143,8 +143,10 @@ treeDataTool = {
 		var datas = CTestPlanAPi.getCtestcase(treeTool.tree.nid, nid1, nid2,searchKey,ttype,priority)
 
 		var dataCols = [
-		  { field : 'scenario',title : '测试场景'},
-		  { field : 'name',title : '用例/测试要点', editor:'text', width:600},
+		  { field : 'scenario',title : '测试场景', formatter : function(value, row, index) {
+			return '<label class="show-content" id="'+row.caseid+'">'+value+"</label>"
+		  }},
+		  { field : 'name',title : '测试要点(用例)', editor:'text', width:400},
 		  { field : 'priority',title : '优先级', editor:'text'},
 		  { field : 'ttype',title : '类别', editor:'text'},
 		  { field : 'owner',title : '修改人', editor:'text'},
@@ -179,6 +181,10 @@ treeDataTool = {
 				}
 			}
 		},treeTool.getLoadDataJson(dataCols, datas)));
+		treeTool.datas = datas;
+		treeTool.showTips('[class="show-content"]',800, 'caseid', function(data){
+			return "用例："+data.name+"\n"+data.remark
+		})
 	},
 
 	operateTreeData : function(value, opType) {
@@ -201,12 +207,12 @@ treeDataTool = {
 		var caseData = treeTool.getDataByName($('#treedatalist').datagrid('getData'), 'caseid', value)
 		if (isNew){
 			$("#caseName").val("")
-			$("#caseRemark").val("")
+			$("#caseRemark").val(caseTemplate)
 		}	
 		else if (caseData) {
 			treeDataTool.tdata = caseData
 			$("#caseName").val(caseData.name)
-			$("#caseRemark").val(caseData.remark)
+			$("#caseRemark").val(caseData.remark==""?caseTemplate:caseData.remark)
 			$("#scenario").val(caseData.scenario)
 			$("#tags").val(caseData.tags)
 			$("#ttype").val(caseData.ttype)
@@ -229,7 +235,7 @@ treeDataTool = {
 		var nid1 = treeTool.nid1
 		var nid2 = treeTool.nid2
 		var caseid = treeTool.isNew ? undefined : caseData.caseid
-
+		remark = remark.replace(/\n/g,'').replace(/ /g,'')==caseTemplate.replace(/\n/g,'').replace(/ /g,'')?"":remark
 		CTestPlanAPi.saveCtestcase(scenario, tags, name, ttype, priority, steps,
 			remark, fnid, nid1, nid2, caseid)
 
@@ -246,8 +252,8 @@ treeTool.initTree();
 +function(){
 	$('#condttype').combobox({data: [{'v':'','n':"所有类别"},{'v':'manual','n':"manual"},{'v':'auto','n':"auto"},{'v':'下线','n':"下线"}], width:'80px',valueField:'v', textField:'n', value:"",onChange: function(){treeDataTool.loadTreeDataList();}});
 	$('#condPriority').combobox({data: CTestPlanAPi.getEnum("planPriority").concat({'v':'','n':"优先级"}), width:'80px',valueField:'v', textField:'n', value:"",onChange: function(){treeDataTool.loadTreeDataList();}});
-}();
-
+}();      
+		
 </script>
 
 </html>
