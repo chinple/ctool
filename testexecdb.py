@@ -36,6 +36,7 @@ class CtestDbOp:
         sql = self.sqlConn.getSql("ctree", Sql.delete, True)
         sql.appendWhere("nid", nid)
         return sql.execute()
+
 # test case
     def saveCtestcase(self, scenario=None, tags=None, name=None, ttype=None, priority=None, steps=None, remark=None, owner=None,
             fnid=None, nid1=None, nid2=None, caseid=None):
@@ -46,10 +47,17 @@ class CtestDbOp:
             "fnid":fnid, "nid1":nid1, "nid2":nid2, "caseid":caseid})
         sql.appendWhere("caseid", caseid)
         return sql.execute()
-    
-    def changeCaseOindex(self):
-        self.sqlConn.executeSql('update testcase set testcase.oindex=testcase.caseid where testcase.oindex=0')
-        pass
+
+    def syncTestcaseOindex(self):
+        return self.sqlConn.executeSql('update testcase set testcase.oindex=testcase.caseid where testcase.oindex=0')
+
+    def changeTestCaseOindex(self, caseid1, caseid2):
+        sql = self.sqlConn.getSql("testcase", Sql.select, True, "caseid,oindex")
+        caseinfo = sql.appendWhere("caseid", (caseid1, caseid2), "in").execute()
+        case1, case2 = caseinfo
+        sql1 = self.sqlConn.getSql("testcase", Sql.update).appendValue("oindex", case1['oindex']).appendWhere("caseid", case2['caseid'])
+        sql2 = self.sqlConn.getSql("testcase", Sql.update).appendValue("oindex", case2['oindex']).appendWhere("caseid", case1['caseid'])
+        return sql1.execute() + sql2.execute()
 
     def getCtestcase(self, fnid=None, nid1=None, nid2=None,
             searchKey=None, ttype=None, priority=None, name=None, owner=None, planid=None, caseid=None, isInplan=True):
@@ -63,7 +71,7 @@ class CtestDbOp:
         if not Sql.isEmpty(searchKey):
             searchKey = '%%%s%%' % searchKey
             sql.appendCondition("(name like '%s' or tags like '%s'or scenario like '%s')", (searchKey, searchKey, searchKey))
-        sql.orderBy("scenario,tags")
+        sql.orderBy("scenario,oindex")
         return sql.execute()
 
     def deleteCtestcase(self, caseid):

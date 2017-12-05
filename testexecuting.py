@@ -50,13 +50,20 @@ class CTestPlanAPi:
     def saveCtestcase(self, scenario, tags, name, ttype, priority, steps, remark,
             fnid=None, nid1=None, nid2=None, caseid=None, __session__=None):
         owner = __session__['name']
-        return self.dbapi.saveCtestcase(scenario, tags, name, ttype, priority, steps, remark, owner, fnid, nid1, nid2, caseid)
+        res = self.dbapi.saveCtestcase(scenario, tags, name, ttype, priority, steps, remark, owner, fnid, nid1, nid2, caseid)
+        if caseid is None:
+            self.dbapi.syncTestcaseOindex()
+        return res
+
     def updateCtestcase(self, caseid, testcase):
         if Sql.isEmpty(caseid):return 0
         tryget = ObjOperation.tryGetVal
         return self.dbapi.saveCtestcase(name=tryget(testcase, 'name', None), priority=tryget(testcase, 'priority', None),
             ttype=tryget(testcase, 'ttype', None), owner=tryget(testcase, 'owner', None),
             remark=tryget(testcase, 'remark', None), caseid=caseid)
+
+    def changeTestCaseOrder(self, caseid1, caseid2):
+        return self.dbapi.changeTestCaseOindex(caseid1, caseid2)
 
     def getCtestcase(self, fnid=None, nid1=None, nid2=None,
             searchKey=None, ttype=None, priority=None, name=None, owner=None, caseid=None):

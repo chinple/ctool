@@ -153,9 +153,11 @@ treeDataTool = {
 		  { field : 'modifytime',title : '修改时间'},
 		  { field : 'caseid',title : '操作', formatter : function(value, row, index) {
 			return [
-					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
-					'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
-				].join("&nbsp;")
+				'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 1)">修改</a>',
+				'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 3, '+index + ')">上移</a>',
+				'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 4, '+index + ')">下移</a>',
+				'<a href="javascript:" onclick="treeDataTool.operateTreeData(' + value +', 2)">删除</a>'
+			].join("&nbsp;")
 		  }},
 		  { field : 'remark',title : '备注', editor:'text', formatter: function(value, row, index) {
 				var tags = row.tags?("【"+row.tags+"】"):"";
@@ -187,7 +189,7 @@ treeDataTool = {
 		})
 	},
 
-	operateTreeData : function(value, opType) {
+	operateTreeData : function(value, opType, index) {
 		if(opType==1){
 			treeDataTool.showTreeData(0, value)
 			return
@@ -199,7 +201,14 @@ treeDataTool = {
 					treeDataTool.loadTreeDataList()
 				}
 			});
+		}else if(opType==3&&index>0){
+			CTestPlanAPi.changeTestCaseOrder(value, treeTool.datas[index-1]['caseid'])
+			treeDataTool.loadTreeDataList()
+		}else if(opType==4&&index<treeTool.datas.length-1){
+			CTestPlanAPi.changeTestCaseOrder(value, treeTool.datas[index+1]['caseid'])
+			treeDataTool.loadTreeDataList()
 		}
+		
 	},
 
 	showTreeData : function(isNew,value) {
