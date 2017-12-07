@@ -85,8 +85,22 @@ welcomeid.innerHTML = AuthApi.getLoginInfo().name+' 欢迎您'
 				<a href="javascript:" onclick="remark.value=treeTool.cdeployTemplate" class="easyui-linkbutton">导入提测模版</a>
 				</td></tr>
 			<tr><td>内容</td>
-				<td colspan=2><textarea id='remark' cols='130' rows=15/></textarea></td></tr>
+				<td colspan=2><textarea id='remark' cols='120' rows=15/></textarea></td></tr>
+			<tr><td>附件</td>
+				<td colspan=2>
+<form id= "uploadForm">  
+	<table><tr><td> </td>
+		<td><input type="file" name="file" id="attachfile"/> </td>
+		<td><input id='uploadFormBtn' type="button" value="上传" onclick="treeDataTool.uploadDeployAttach()" /> </td>
+		<td>&nbsp;<a id='attachfilelink'></a> </td></tr>
+	</table>
+</form>
+				</td></tr>
 		</table>
+		
+		 
+</form>
+
 	</div>
 	
 	<div id="deployop" class="easyui-dialog" title="部署控制" data-options="iconCls:'icon-save',closable:true,closed:true,modal:true" style="padding: 10px;">
@@ -218,6 +232,9 @@ treeDataTool = {
 	showTreeData : function(isNew,value) {
 		$('#treedataadd').dialog('open')
 		var tdata = treeTool.getDataByName($('#treedatalist').datagrid('getData'), 'deployid', value)
+		uploadFormBtn.disabled=false
+		uploadFormBtn.value = "上传"
+		treeDataTool.setAttachfile("")
 		if (isNew){
 			$("#procode").combobox("setValue", "")
 			remark.value = treeTool.cdeployTemplate
@@ -232,6 +249,10 @@ treeDataTool = {
 			$("#notifyer").combobox("setValues",[])
 			if( tdata.notifyer ) $("#notifyer").combobox("setValues", tdata.notifyer.split(","))
 			$("#remark").val(tdata.remark)
+			if(tdata.attach){
+				var attach = JSON.parse(tdata.attach)
+				treeDataTool.setAttachfile(attach.attach)
+			}
 		}
 		treeTool.isNew = isNew
 		var fnid = treeTool.nid
@@ -248,6 +269,7 @@ treeDataTool = {
 		var owner = $("#owner").combobox("getValue")
 		var notifyer = $("#notifyer").combobox("getValues")
 		var remark = $("#remark").val()
+		var attach = {"attach": attachfilelink.value }
 
 		var fnid = treeTool.isNew ? treeTool.tree.nid : tdata.fnid
 		var nid1 = treeTool.nid1
@@ -255,7 +277,7 @@ treeDataTool = {
 		var deployid = treeTool.isNew ? undefined : tdata.deployid
 		var phaseInit = isClose==2
 
-		CTestPlanAPi.addDeploy(version, procode, branch, pendtime, owner, notifyer.join(","), remark, fnid, nid1, nid2, phaseInit, deployid)
+		CTestPlanAPi.addDeploy(version, procode, branch, pendtime, owner, notifyer.join(","), remark,attach, fnid, nid1, nid2, phaseInit, deployid)
 		if (isClose)
 			$('#treedataadd').dialog('close')
 		treeTool.isNew = true
@@ -296,6 +318,32 @@ treeDataTool = {
 	refreshDeployop: function(deployid){
 		CTestPlanAPi.getDeployStatus(deployid)
 		setTimeout(treeDataTool.loadTreeDataList,10)
+	},
+	uploadDeployAttach: function(){
+		if(attachfile.files[0]){
+			var formData = new FormData($( "#uploadForm" )[0]); 
+			uploadFormBtn.value = "上传中"
+			uploadFormBtn.disabled=true
+			$.ajax({  
+				url: '/fileupload?override=override&folder=packages', type: 'POST',  data: formData,
+				async: false, cache: false, contentType: false, processData: false,  
+				success: function (returndata) {  
+					console.log(returndata);
+					uploadFormBtn.disabled=false
+					treeDataTool.setAttachfile(attachfile.files[0].name)
+					uploadFormBtn.value = "上传成功"
+				},  
+				error: function (returndata) {
+				uploadFormBtn.disabled=false
+				  uploadFormBtn.value = "上传失败"
+				}
+			}); 
+		}
+	},
+	setAttachfile: function(filename){
+		attachfilelink.value = filename
+		attachfilelink.href = "/file/uploads/packages/"+filename
+		attachfilelink.innerText = filename.length>0?(attachfilelink.href):""
 	}
 }
 

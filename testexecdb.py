@@ -305,7 +305,7 @@ class CtestDbOp:
     
     # deploy
     def saveCdeploy(self, version=None, procode=None, proname=None, protype=None, branch=None, brancharg=None, pendtime=None,
-            creator=None, owner=None, notifyer=None, remark=None, fnid=None, nid1=None, nid2=None,
+            creator=None, owner=None, notifyer=None, remark=None, attach=None, fnid=None, nid1=None, nid2=None,
             phase=None, status=None, deployarg=None, deploytimes=None, isSetModifytime=False, deployid=None):
         creattime = TimmerOperation.getFormatTime(time.time()) if deployid is None else None
         modifytime = TimmerOperation.getFormatTime(time.time()) if isSetModifytime else None
@@ -314,7 +314,7 @@ class CtestDbOp:
         sql = self.sqlConn.getSql("cdeploy", Sql.insert if Sql.isEmpty(deployid) else Sql.update, True)
         sql.appendValueByJson({'version':version, 'procode':procode, 'proname': proname, 'protype': protype,
             'branch': branch, 'brancharg': brancharg, 'pendtime': pendtime,
-            "creator":creator, "owner":owner, "notifyer":notifyer, "remark":remark, 'creattime': creattime, 'modifytime':modifytime,
+            "creator":creator, "owner":owner, "notifyer":notifyer, "remark":remark, 'attach':attach, 'creattime': creattime, 'modifytime':modifytime,
             "phase":phase, "status":status, "deployarg":deployarg, 'deploytimes':deploytimes, 'fnid': fnid, 'nid1': nid1, 'nid2': nid2})
         sql.appendWhere("deployid", deployid)
         return sql.execute()

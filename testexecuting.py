@@ -12,6 +12,7 @@ from server.csession import LocalMemSessionHandler
 from server.chandle import RedirectException, ReturnFileException
 from testexecdb import CtestDbOp, EmailReportor
 from libs.timmer import TimmerJson
+from libs.parser import toJsonStr
 
 @cloudModule()
 class CTestPlanAPi:
@@ -329,7 +330,7 @@ class CTestPlanAPi:
     def _isRelativeDeploy(self, owner, deploy):
         return (deploy['owner'] == owner or deploy['creator'] == owner)
 
-    def addDeploy(self, version, procode, branch, pendtime=None, owner=None, notifyer=None, remark=None,
+    def addDeploy(self, version, procode, branch, pendtime=None, owner=None, notifyer=None, remark=None, attach=None,
             fnid=None, nid1=None, nid2=None, phaseInit=False, deployid=None, __session__=None):
         proname, protype, brancharg, deployarg = None, None, None, None
         phase, status = (1 if phaseInit else 0, 0) if deployid is None else (None, None)
@@ -338,8 +339,10 @@ class CTestPlanAPi:
             deploy = self.dbapi.getCdeploy(deployid=deployid)[0]
             if not __session__['admin'] and not self._isRelativeDeploy(creator, deploy):
                 raise Exception("Not the creator or owner")
+        if not Sql.isEmpty(attach):
+            attach = toJsonStr(attach)
         return self.dbapi.saveCdeploy(version, procode, proname, protype, branch, brancharg, pendtime,
-            creator, owner, notifyer, remark, fnid, nid1, nid2, phase, status, deployarg, deployid=deployid)
+            creator, owner, notifyer, remark, attach, fnid, nid1, nid2, phase, status, deployarg, deployid=deployid)
 
     def getDeploy(self, planversion=None, projectremark=None, phase=None, creator=None,
             fnid=None, nid1=None, nid2=None, cstarttime=None, cendtime=None):
@@ -466,4 +469,4 @@ class AuthApi(LocalMemSessionHandler):
 if __name__ == "__main__":
     from cserver import servering
     cprop.load("cplan.ini")
-    servering("-p 8089 -f webs  -m cplan.html  -t testtoolplatform.py -t testtoolcenter.py")
+    servering("-p 8089 -f webs  -m cplan.html  -t testtoolplatform.py -t testtoolcenter.py --uploadFolder webs\uploads")
